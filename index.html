@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ห้องปฏิบัติการจำลอง: ทฤษฎีจลน์ของแก๊ส</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --shell:#E3E8EC;
+  --card:#FBFCFD;
+  --ink:#131C25;
+  --muted:#5C6D7C;
+  --line:#C7D1D9;
+  --chamber:#0B131B;
+  --teal:#0F6B62;
+  --teal-soft:#DCEDEA;
+  --amber:#D7871F;
+  --red:#B23A34;
+  --cold:#4F8FE0;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:"IBM Plex Sans Thai","Noto Sans Thai",system-ui,sans-serif;
+  background:var(--shell);
+  color:var(--ink);
+  font-size:15px;
+  line-height:1.55;
+  font-variant-numeric:tabular-nums;
+}
+.wrap{max-width:1340px;margin:0 auto;padding:18px 18px 40px}
+
+header.top{display:flex;flex-wrap:wrap;align-items:flex-end;gap:14px 24px;margin-bottom:14px}
+header.top h1{font-size:23px;font-weight:600;margin:0;letter-spacing:-.01em}
+header.top p{margin:0;color:var(--muted);font-size:13.5px;max-width:52ch}
+
+.modes{display:flex;flex-wrap:wrap;gap:6px;margin:14px 0 16px;
+  background:#D6DDE3;padding:5px;border-radius:10px;width:fit-content}
+.modes button{
+  font-family:inherit;font-size:13.5px;font-weight:500;color:var(--muted);
+  background:transparent;border:0;border-radius:7px;padding:7px 14px;cursor:pointer;
+}
+.modes button:hover{color:var(--ink)}
+.modes button[aria-pressed="true"]{background:var(--card);color:var(--teal);
+  box-shadow:0 1px 2px rgba(19,28,37,.14)}
+.modes button:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+
+.brief{background:var(--teal-soft);border-left:3px solid var(--teal);
+  padding:10px 14px;border-radius:0 8px 8px 0;font-size:13.5px;margin-bottom:16px;max-width:96ch}
+.brief b{font-weight:600}
+
+.grid{display:grid;grid-template-columns:minmax(0,1.62fr) minmax(300px,.85fr);gap:16px;align-items:start}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+.panel h2{font-size:14px;font-weight:600;margin:0 0 10px;color:var(--muted)}
+
+/* chamber */
+#chamber{display:block;width:100%;height:auto;border-radius:9px;background:var(--chamber)}
+.chamber-wrap{background:var(--chamber);border-radius:12px;padding:10px;border:1px solid #0A1017}
+.chamber-foot{display:flex;flex-wrap:wrap;gap:8px 16px;align-items:center;
+  padding:9px 4px 2px;color:#93A6B5;font-size:12.5px}
+.legend{display:flex;align-items:center;gap:7px}
+.ramp{width:96px;height:9px;border-radius:5px;
+  background:linear-gradient(90deg,#3466CC,#5FA0D8,#D9A22B,#FFE9BE)}
+
+/* readouts */
+.reads{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);
+  border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.read{background:var(--card);padding:9px 11px}
+.read .k{font-size:11.5px;color:var(--muted)}
+.read .v{font-size:19px;font-weight:600;letter-spacing:-.015em;line-height:1.25}
+.read .v small{font-size:11.5px;font-weight:400;color:var(--muted);margin-left:3px}
+.read.wide{grid-column:1/-1}
+.read.check .v{color:var(--teal)}
+
+.ctrl{margin:13px 0 0}
+.ctrl .lab{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;gap:8px}
+.ctrl .lab span:last-child{font-weight:600}
+.ctrl input[type=range]{width:100%;margin:5px 0 0;accent-color:var(--teal)}
+.ctrl.locked{opacity:.42}
+.ctrl.locked input{pointer-events:none}
+.locknote{font-size:11.5px;color:var(--amber);font-weight:500}
+
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:13px}
+button.act{font-family:inherit;font-size:13px;font-weight:500;cursor:pointer;
+  background:var(--teal);color:#fff;border:0;border-radius:8px;padding:8px 13px}
+button.act.ghost{background:transparent;color:var(--teal);border:1px solid var(--teal)}
+button.act:hover{filter:brightness(1.08)}
+button.act:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+
+select{font-family:inherit;font-size:13.5px;padding:7px 9px;border-radius:8px;
+  border:1px solid var(--line);background:#fff;color:var(--ink);width:100%;margin-top:5px}
+label.field{font-size:13px;color:var(--muted);display:block;margin-top:13px}
+
+.checks{display:flex;flex-wrap:wrap;gap:10px 16px;margin-top:13px;font-size:13px}
+.checks label{display:flex;align-items:center;gap:6px;cursor:pointer}
+.checks input{accent-color:var(--teal);width:15px;height:15px}
+
+.lower{display:grid;grid-template-columns:minmax(0,1.62fr) minmax(300px,.85fr);gap:16px;margin-top:16px;align-items:start}
+canvas.plot{display:block;width:100%;height:auto;background:#fff;border-radius:8px;border:1px solid var(--line)}
+
+table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:9px}
+th,td{text-align:right;padding:4px 6px;border-bottom:1px solid var(--line)}
+th{color:var(--muted);font-weight:500;font-size:11.5px}
+td:first-child,th:first-child{text-align:left;color:var(--muted)}
+.tablebox{max-height:196px;overflow:auto}
+.empty{color:var(--muted);font-size:12.5px;padding:14px 2px}
+
+footer.note{margin-top:18px;color:var(--muted);font-size:12.5px;max-width:88ch}
+footer.note code{background:#D9E0E6;padding:1px 5px;border-radius:4px;font-size:12px}
+
+@media(max-width:940px){
+  .grid,.lower{grid-template-columns:1fr}
+}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <div>
+    <h1>ห้องปฏิบัติการจำลอง: ทฤษฎีจลน์ของแก๊ส</h1>
+    <p>มองเห็นการชนของโมเลกุลที่ทำให้เกิดความดัน แล้วเก็บข้อมูลเพื่อตรวจสอบกฎของแก๊สด้วยตัวเอง</p>
+  </div>
+</header>
+
+<div class="modes" role="group" aria-label="เลือกโหมดการทดลอง">
+  <button data-mode="free" aria-pressed="true">สำรวจอิสระ</button>
+  <button data-mode="boyle" aria-pressed="false">กฎของบอยล์</button>
+  <button data-mode="charles" aria-pressed="false">กฎของชาร์ล</button>
+  <button data-mode="gay" aria-pressed="false">กฎของเกย์-ลูสแซก</button>
+  <button data-mode="avogadro" aria-pressed="false">กฎของอาโวกาโดร</button>
+</div>
+
+<div class="brief" id="brief"></div>
+
+<div class="grid">
+  <div>
+    <div class="chamber-wrap">
+      <canvas id="chamber" width="880" height="520"></canvas>
+      <div class="chamber-foot">
+        <div class="legend"><span>ช้า</span><div class="ramp"></div><span>เร็ว</span></div>
+        <div id="collrate"></div>
+      </div>
+    </div>
+  </div>
+
+  <div>
+    <div class="panel">
+      <h2>ค่าที่วัดได้จากแบบจำลอง</h2>
+      <div class="reads">
+        <div class="read"><div class="k">ความดัน P</div><div class="v"><span id="rP">–</span><small>kPa</small></div></div>
+        <div class="read"><div class="k">อุณหภูมิ T</div><div class="v"><span id="rT">–</span><small>K</small></div></div>
+        <div class="read"><div class="k">ปริมาตร V</div><div class="v"><span id="rV">–</span><small>nm³</small></div></div>
+        <div class="read"><div class="k">จำนวนโมเลกุล N</div><div class="v"><span id="rN">–</span></div></div>
+        <div class="read"><div class="k">อัตราเร็ว v<sub>rms</sub></div><div class="v"><span id="rVr">–</span><small>m/s</small></div></div>
+        <div class="read"><div class="k">พลังงานจลน์เฉลี่ย</div><div class="v"><span id="rE">–</span><small>×10⁻²¹ J</small></div></div>
+        <div class="read wide check"><div class="k">ตรวจสอบ PV = NkT &nbsp;→&nbsp; อัตราส่วน PV ⁄ NkT</div><div class="v"><span id="rChk">–</span></div></div>
+      </div>
+
+      <div class="ctrl" id="cT">
+        <div class="lab"><span>อุณหภูมิ T <span class="locknote" data-lock>คงที่</span></span><span id="lT">300 K</span></div>
+        <input type="range" id="sT" min="80" max="900" step="5" value="300">
+      </div>
+
+      <div class="ctrl" id="cV">
+        <div class="lab"><span>ตำแหน่งลูกสูบ (ปริมาตร) <span class="locknote" data-lock>คงที่</span></span><span id="lV">–</span></div>
+        <input type="range" id="sV" min="4" max="17" step="0.1" value="13">
+      </div>
+
+      <div class="ctrl" id="cN">
+        <div class="lab"><span>จำนวนโมเลกุล N <span class="locknote" data-lock>คงที่</span></span><span id="lN">300</span></div>
+        <input type="range" id="sN" min="40" max="520" step="10" value="300">
+      </div>
+
+      <label class="field">ชนิดแก๊ส (ต่างกันที่มวลโมเลกุล)
+        <select id="gas">
+          <option value="4.003">ฮีเลียม He — 4 u</option>
+          <option value="20.18">นีออน Ne — 20 u</option>
+          <option value="28.01" selected>ไนโตรเจน N₂ — 28 u</option>
+          <option value="32.00">ออกซิเจน O₂ — 32 u</option>
+          <option value="44.01">คาร์บอนไดออกไซด์ CO₂ — 44 u</option>
+        </select>
+      </label>
+
+      <div class="checks">
+        <label><input type="checkbox" id="tracer"> ตามรอย 1 โมเลกุล</label>
+        <label><input type="checkbox" id="showv"> แสดงเวกเตอร์ความเร็ว</label>
+      </div>
+
+      <div class="row">
+        <button class="act" id="log">บันทึกจุดข้อมูล</button>
+        <button class="act ghost" id="equal">ตั้งให้ทุกโมเลกุลเร็วเท่ากัน</button>
+        <button class="act ghost" id="pause">หยุดชั่วคราว</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="lower">
+  <div class="panel">
+    <h2>การกระจายอัตราเร็วของโมเลกุล (เส้นทึบ = ทฤษฎีของแมกซ์เวลล์–โบลต์ซมันน์)</h2>
+    <canvas id="hist" class="plot" width="880" height="300"></canvas>
+  </div>
+
+  <div class="panel">
+    <h2>ตารางข้อมูลที่บันทึก</h2>
+    <canvas id="scatter" class="plot" width="560" height="240"></canvas>
+    <div class="tablebox">
+      <table id="tbl">
+        <thead><tr><th>#</th><th>T (K)</th><th>V (nm³)</th><th>N</th><th>P (kPa)</th><th>PV ⁄ NkT</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="empty" id="emptyNote">ยังไม่มีข้อมูล — ปรับตัวแปรแล้วกด “บันทึกจุดข้อมูล”</div>
+    </div>
+    <div class="row"><button class="act ghost" id="clear">ล้างข้อมูล</button></div>
+  </div>
+</div>
+
+<footer class="note">
+  <b>ความดันในแบบจำลองนี้ไม่ได้แทนค่าจากสูตร</b> แต่คำนวณจากผลรวมการดล 2mv ของโมเลกุลที่ชนผนังจริง ๆ หารด้วยพื้นที่และเวลา
+  ค่าที่อ่านได้จึงผันผวนแบบสถิติเหมือนการวัดจริง และอัตราส่วน <code>PV / NkT</code> ที่ออกมาใกล้ 1.00 คือผลลัพธ์ ไม่ใช่สิ่งที่ตั้งไว้
+  ภาพแสดงเป็นระนาบ 2 มิติ แต่โมเลกุลทุกตัวมีความเร็วครบ 3 องค์ประกอบ ค่า v<sub>rms</sub> และ <code>Ek = (3/2)kT</code> จึงตรงกับทฤษฎี 3 มิติ
+  กล่องสูง 9 nm ลึก 9 nm ปรับได้เฉพาะด้านกว้างด้วยลูกสูบ
+  โมเลกุลถูก<b>วาดใหญ่กว่าขนาดจริงมากเพื่อให้มองเห็น</b> ในการคำนวณถือเป็นจุด จึงอาจซ้อนทับกันบนจอได้ สิ่งที่บอกว่าเกิดการชนคือ<b>การหักเหทิศทางกะทันหัน</b> ซึ่งเห็นชัดเมื่อเปิด “ตามรอย 1 โมเลกุล”
+</footer>
+
+</div>
+
+<script>
+"use strict";
+const KB = 1.380649e-23, AMU = 1.66053907e-27;
+const LY = 9, LZ = 9;              // nm
+const cv = document.getElementById('chamber'), cx = cv.getContext('2d');
+const hv = document.getElementById('hist'), hx = hv.getContext('2d');
+const sv = document.getElementById('scatter'), sx = sv.getContext('2d');
+
+const S = {
+  mode:'free', T:300, Lx:13, N:300, mass:28.01*AMU,
+  running:true, tracer:false, showv:false,
+  Ptarget:null, P:0, Pema:0, log:[], trail:[]
+};
+
+let p = [];                                   // {x,y,vx,vy,vz} — อนุภาคจุด (ideal gas)
+const DRAW_R = 0.11;                          // nm : ขนาดที่ "วาด" เท่านั้น ไม่มีผลต่อฟิสิกส์
+const FRQ = 0.3;                              // ปรับความถี่การชนระหว่างโมเลกุล
+
+const gauss = () => { let u=0,v=0; while(!u)u=Math.random(); while(!v)v=Math.random();
+  return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); };
+const sigma = () => Math.sqrt(KB*S.T/S.mass)/1000;   // nm/ps  (1 nm/ps = 1000 m/s)
+
+function seed(n){ p = []; for(let i=0;i<n;i++) p.push(mk()); S.trail = []; }
+function mk(){
+  const s = sigma();
+  return { x: Math.random()*S.Lx, y: Math.random()*LY,
+           vx: gauss()*s, vy: gauss()*s, vz: gauss()*s };
+}
+seed(S.N);
+
+/* ---------- ฟิสิกส์ ---------- */
+let impulse = 0, impTime = 0, wallHits = 0, hitTime = 0;
+const DT = 0.075;      // ps ต่อ substep
+const SUB = 2;
+
+function step(){
+  const dt = DT;
+  for(let s=0;s<SUB;s++){
+    for(const q of p){
+      q.x += q.vx*dt; q.y += q.vy*dt;
+      if(q.x < 0){ q.x = 0; q.vx = Math.abs(q.vx); impulse += 2*S.mass*Math.abs(q.vx); wallHits++; }
+      if(q.x > S.Lx){ q.x = S.Lx; q.vx = -Math.abs(q.vx); impulse += 2*S.mass*Math.abs(q.vx); wallHits++; }
+      if(q.y < 0){ q.y = 0; q.vy = Math.abs(q.vy); impulse += 2*S.mass*Math.abs(q.vy); wallHits++; }
+      if(q.y > LY){ q.y = LY; q.vy = -Math.abs(q.vy); impulse += 2*S.mass*Math.abs(q.vy); wallHits++; }
+    }
+    dsmc(dt);
+    impTime += dt; hitTime += dt;
+  }
+  thermostat();
+}
+
+/* การชนระหว่างโมเลกุล แบบ DSMC: สุ่มคู่ในเซลล์เดียวกัน แล้วหมุนความเร็วสัมพัทธ์ไปทิศสุ่ม
+   → รักษาโมเมนตัมและพลังงาน ทำให้เกิดการกระจายแมกซ์เวลล์ และไม่มี "ปริมาตรกีดกัน"
+   ค่า PV/NkT จึงเท่ากับ 1 ตามแก๊สอุดมคติ */
+function dsmc(dt){
+  const cell = 1.5;
+  const nx = Math.max(1,Math.ceil(S.Lx/cell)), ny = Math.max(1,Math.ceil(LY/cell));
+  const cw = S.Lx/nx, ch = LY/ny, Acell = cw*ch;
+  const grid = new Array(nx*ny); for(let i=0;i<grid.length;i++) grid[i]=[];
+  for(let i=0;i<p.length;i++){
+    const gx = Math.min(nx-1,Math.max(0,Math.floor(p[i].x/cw)));
+    const gy = Math.min(ny-1,Math.max(0,Math.floor(p[i].y/ch)));
+    grid[gy*nx+gx].push(i);
+  }
+  const vmaxr = 4*sigma();
+  for(const A of grid){
+    const nc = A.length; if(nc < 2) continue;
+    const cand = 0.5*nc*(nc-1)*FRQ*dt/Acell*Math.sqrt(S.T/300);
+    let k = Math.floor(cand); if(Math.random() < cand-k) k++;
+    for(let c=0;c<k;c++){
+      const a = p[A[(Math.random()*nc)|0]], b = p[A[(Math.random()*nc)|0]];
+      if(a === b) continue;
+      const rx=a.vx-b.vx, ry=a.vy-b.vy, rz=a.vz-b.vz;
+      const vr = Math.sqrt(rx*rx+ry*ry+rz*rz);
+      if(Math.random() > vr/vmaxr) continue;
+      const mx=(a.vx+b.vx)/2, my=(a.vy+b.vy)/2, mz=(a.vz+b.vz)/2;
+      const ct = 2*Math.random()-1, st = Math.sqrt(1-ct*ct), ph = 6.283185*Math.random();
+      const ux = st*Math.cos(ph), uy = st*Math.sin(ph), uz = ct;
+      a.vx=mx+vr/2*ux; a.vy=my+vr/2*uy; a.vz=mz+vr/2*uz;
+      b.vx=mx-vr/2*ux; b.vy=my-vr/2*uy; b.vz=mz-vr/2*uz;
+    }
+  }
+}
+
+function thermostat(){
+  let s2 = 0; for(const q of p) s2 += q.vx*q.vx + q.vy*q.vy + q.vz*q.vz;
+  const Tm = (S.mass*(s2/p.length)*1e6)/(3*KB);
+  if(Tm > 0){
+    const lam = Math.sqrt(1 + 0.05*(S.T/Tm - 1));
+    for(const q of p){ q.vx*=lam; q.vy*=lam; q.vz*=lam; }
+  }
+}
+
+function measure(){
+  if(impTime <= 0) return;
+  const Ax = LY*LZ*1e-18, Ay = S.Lx*LZ*1e-18;          // m²
+  const area = 2*Ax + 2*Ay;
+  const dt = impTime*1e-12;                            // s
+  // impulse เก็บเป็น kg·(nm/ps) และ 1 nm/ps = 1000 m/s → impulse/(A·dt) ออกมาเป็น kPa พอดี
+  S.P = impulse/(area*dt);                             // kPa
+  S.Pema = S.Pema ? S.Pema*0.9 + S.P*0.1 : S.P;
+  impulse = 0; impTime = 0;
+  if(S.Ptarget && (S.mode==='charles'||S.mode==='avogadro')) servo();
+}
+
+function servo(){
+  const err = (S.Pema - S.Ptarget)/S.Ptarget;
+  let L = S.Lx*(1 + Math.max(-0.05, Math.min(0.05, err*0.5)));
+  L = Math.max(4, Math.min(17, L));
+  S.Lx = L; for(const q of p) if(q.x > S.Lx) q.x = S.Lx;
+  document.getElementById('sV').value = S.Lx.toFixed(1);
+  document.getElementById('lV').textContent = (S.Lx*LY*LZ).toFixed(0)+' nm³';
+}
+
+const stats = () => {
+  let s2=0; for(const q of p) s2 += q.vx*q.vx+q.vy*q.vy+q.vz*q.vz;
+  const ms = (s2/p.length)*1e6;                        // ⟨v²⟩ (m/s)²
+  return { vrms: Math.sqrt(ms), Ek: 0.5*S.mass*ms, Tm: S.mass*ms/(3*KB) };
+};
+
+/* ---------- การวาด ---------- */
+function speedColor(v, vr){
+  const t = Math.max(0, Math.min(1, v/(1.9*vr)));
+  const h = 218 - 190*t, l = 52 + 26*t, s = 72 - 12*t;
+  return `hsl(${h} ${s}% ${l}%)`;
+}
+
+function draw(){
+  const W = cv.width, H = cv.height, pad = 26;
+  const scale = Math.min((W-2*pad-70)/17, (H-2*pad)/LY);
+  const ox = pad, oy = (H - LY*scale)/2;
+  cx.clearRect(0,0,W,H);
+
+  // กริดพื้นหลัง
+  cx.strokeStyle='rgba(140,175,205,.10)'; cx.lineWidth=1;
+  for(let g=1;g<LY;g++){ cx.beginPath(); cx.moveTo(ox,oy+g*scale); cx.lineTo(ox+17*scale,oy+g*scale); cx.stroke(); }
+  for(let g=1;g<17;g++){ cx.beginPath(); cx.moveTo(ox+g*scale,oy); cx.lineTo(ox+g*scale,oy+LY*scale); cx.stroke(); }
+
+  const wx = ox + S.Lx*scale;
+  // ผนัง
+  cx.strokeStyle='#4E6A80'; cx.lineWidth=2.5;
+  cx.beginPath(); cx.moveTo(wx,oy); cx.lineTo(ox,oy); cx.lineTo(ox,oy+LY*scale); cx.lineTo(wx,oy+LY*scale); cx.stroke();
+
+  const st = stats();
+  // อนุภาค (ตัดขอบด้วย clip เพื่อไม่ให้ล้นผนัง)
+  cx.save();
+  cx.beginPath(); cx.rect(ox, oy, S.Lx*scale, LY*scale); cx.clip();
+  for(let i=0;i<p.length;i++){
+    const q = p[i];
+    const v = Math.sqrt(q.vx*q.vx+q.vy*q.vy+q.vz*q.vz)*1000;
+    cx.fillStyle = speedColor(v, st.vrms);
+    cx.beginPath(); cx.arc(ox+q.x*scale, oy+q.y*scale, DRAW_R*scale, 0, 6.2832); cx.fill();
+    if(S.showv){
+      cx.strokeStyle='rgba(255,255,255,.34)'; cx.lineWidth=1;
+      cx.beginPath(); cx.moveTo(ox+q.x*scale, oy+q.y*scale);
+      cx.lineTo(ox+(q.x+q.vx*1.5)*scale, oy+(q.y+q.vy*1.5)*scale); cx.stroke();
+    }
+  }
+  cx.restore();
+  // ตามรอย
+  if(S.tracer && p.length){
+    S.trail.push([p[0].x, p[0].y]); if(S.trail.length>420) S.trail.shift();
+    cx.strokeStyle='rgba(255,214,120,.75)'; cx.lineWidth=1.4; cx.beginPath();
+    for(let i=0;i<S.trail.length;i++){
+      const t = S.trail[i]; const X=ox+t[0]*scale, Y=oy+t[1]*scale;
+      if(i===0||Math.abs(t[0]-S.trail[i-1][0])>2) cx.moveTo(X,Y); else cx.lineTo(X,Y);
+    }
+    cx.stroke();
+    cx.strokeStyle='#FFD678'; cx.lineWidth=2;
+    cx.beginPath(); cx.arc(ox+p[0].x*scale, oy+p[0].y*scale, DRAW_R*scale+4, 0, 6.2832); cx.stroke();
+  }
+
+  // ลูกสูบ
+  const pw = 16;
+  cx.fillStyle='#8FA3B4'; cx.fillRect(wx, oy, pw, LY*scale);
+  cx.strokeStyle='#5D7385'; cx.lineWidth=1;
+  for(let g=0; g<LY*scale; g+=7){ cx.beginPath(); cx.moveTo(wx,oy+g); cx.lineTo(wx+pw,oy+g+6); cx.stroke(); }
+  cx.fillStyle='#8FA3B4'; cx.fillRect(wx+pw, oy+LY*scale/2-5, W-(wx+pw)-8, 10);
+
+  // มาตรวัดความดันแนวตั้งด้านซ้าย
+  const bh = LY*scale, bw = 7, bx = ox-14;
+  cx.fillStyle='rgba(255,255,255,.09)'; cx.fillRect(bx, oy, bw, bh);
+  const frac = Math.max(0, Math.min(1, S.Pema/6000));
+  cx.fillStyle = frac>0.8 ? '#E0685E' : '#5FBFAF';
+  cx.fillRect(bx, oy+bh*(1-frac), bw, bh*frac);
+}
+
+function drawHist(){
+  const W=hv.width, H=hv.height, L=52, Bo=34, Tp=14, Rr=14;
+  hx.clearRect(0,0,W,H);
+  const st = stats();
+  const vmax = Math.max(400, st.vrms*2.6);
+  const NB = 34, bins = new Array(NB).fill(0);
+  for(const q of p){
+    const v = Math.sqrt(q.vx*q.vx+q.vy*q.vy+q.vz*q.vz)*1000;
+    const b = Math.floor(v/vmax*NB); if(b>=0&&b<NB) bins[b]++;
+  }
+  const dv = vmax/NB;
+  // ทฤษฎี MB
+  const a = S.mass/(2*KB*S.T);
+  const f = v => 4*Math.PI*Math.pow(a/Math.PI,1.5)*v*v*Math.exp(-a*v*v);
+  let fmax = 0; for(let i=0;i<=300;i++){ const v=i/300*vmax; fmax=Math.max(fmax,f(v)); }
+  const ymax = Math.max(fmax*p.length*dv, Math.max(...bins))*1.18;
+
+  const X = v => L + v/vmax*(W-L-Rr);
+  const Y = c => H-Bo - c/ymax*(H-Bo-Tp);
+
+  hx.strokeStyle='#DDE3E8'; hx.lineWidth=1;
+  for(let i=0;i<=4;i++){ const y=Tp+i*(H-Bo-Tp)/4; hx.beginPath(); hx.moveTo(L,y); hx.lineTo(W-Rr,y); hx.stroke(); }
+
+  for(let i=0;i<NB;i++){
+    if(!bins[i]) continue;
+    const x0=X(i*dv), x1=X((i+1)*dv);
+    hx.fillStyle='rgba(79,143,224,.34)';
+    hx.fillRect(x0+1, Y(bins[i]), x1-x0-2, H-Bo-Y(bins[i]));
+  }
+  hx.strokeStyle='#0F6B62'; hx.lineWidth=2.2; hx.beginPath();
+  for(let i=0;i<=300;i++){ const v=i/300*vmax, y=Y(f(v)*p.length*dv);
+    i? hx.lineTo(X(v),y) : hx.moveTo(X(v),y); }
+  hx.stroke();
+
+  // เครื่องหมาย vp, vbar, vrms
+  const m = S.mass;
+  const vp = Math.sqrt(2*KB*S.T/m), vb = Math.sqrt(8*KB*S.T/(Math.PI*m)), vr = Math.sqrt(3*KB*S.T/m);
+  [[vp,'v_p','#D7871F'],[vb,'v̄','#B23A34'],[vr,'v_rms','#131C25']].forEach(([v,lab,col],i)=>{
+    if(v>vmax) return;
+    hx.strokeStyle=col; hx.lineWidth=1.4; hx.setLineDash([4,3]);
+    hx.beginPath(); hx.moveTo(X(v),Tp); hx.lineTo(X(v),H-Bo); hx.stroke(); hx.setLineDash([]);
+    hx.fillStyle=col; hx.font='500 12px "IBM Plex Sans Thai",sans-serif';
+    hx.fillText(lab+' '+v.toFixed(0), X(v)+4, Tp+13+i*15);
+  });
+
+  hx.strokeStyle='#98A6B2'; hx.beginPath(); hx.moveTo(L,H-Bo); hx.lineTo(W-Rr,H-Bo); hx.stroke();
+  hx.fillStyle='#5C6D7C'; hx.font='400 11.5px "IBM Plex Sans Thai",sans-serif'; hx.textAlign='center';
+  for(let i=0;i<=5;i++){ const v=i/5*vmax; hx.fillText(v.toFixed(0), X(v), H-Bo+16); }
+  hx.fillText('อัตราเร็ว v (m/s)', (L+W-Rr)/2, H-6);
+  hx.textAlign='left'; hx.save(); hx.translate(14,(H-Bo+Tp)/2); hx.rotate(-Math.PI/2);
+  hx.textAlign='center'; hx.fillText('จำนวนโมเลกุล', 0, 0); hx.restore();
+}
+
+/* ---------- บันทึกข้อมูล / กราฟ ---------- */
+const AXES = {
+  free:   {xk:d=>d.V, xl:'V (nm³)', yk:d=>d.P, yl:'P (kPa)'},
+  boyle:  {xk:d=>1/d.V*1000, xl:'1/V (×10⁻³ nm⁻³)', yk:d=>d.P, yl:'P (kPa)'},
+  charles:{xk:d=>d.T, xl:'T (K)', yk:d=>d.V, yl:'V (nm³)'},
+  gay:    {xk:d=>d.T, xl:'T (K)', yk:d=>d.P, yl:'P (kPa)'},
+  avogadro:{xk:d=>d.N, xl:'N (โมเลกุล)', yk:d=>d.V, yl:'V (nm³)'}
+};
+
+function drawScatter(){
+  const W=sv.width,H=sv.height,L=52,Bo=32,Tp=12,Rr=14;
+  sx.clearRect(0,0,W,H);
+  const ax = AXES[S.mode], d = S.log;
+  sx.strokeStyle='#98A6B2'; sx.lineWidth=1;
+  sx.beginPath(); sx.moveTo(L,Tp); sx.lineTo(L,H-Bo); sx.lineTo(W-Rr,H-Bo); sx.stroke();
+  sx.fillStyle='#5C6D7C'; sx.font='400 11.5px "IBM Plex Sans Thai",sans-serif';
+  sx.textAlign='center'; sx.fillText(ax.xl,(L+W-Rr)/2,H-8);
+  sx.save(); sx.translate(13,(H-Bo+Tp)/2); sx.rotate(-Math.PI/2); sx.fillText(ax.yl,0,0); sx.restore();
+  if(!d.length){ sx.fillText('บันทึกอย่างน้อย 2 จุดเพื่อดูแนวโน้ม',(L+W-Rr)/2,(H)/2); sx.textAlign='left'; return; }
+  const xs=d.map(ax.xk), ys=d.map(ax.yk);
+  const x0=Math.min(0,...xs), x1=Math.max(...xs)*1.1||1;
+  const y0=Math.min(0,...ys), y1=Math.max(...ys)*1.1||1;
+  const PX=v=>L+(v-x0)/(x1-x0)*(W-L-Rr), PY=v=>H-Bo-(v-y0)/(y1-y0)*(H-Bo-Tp);
+  sx.fillStyle='#0F6B62';
+  d.forEach((r,i)=>{ sx.beginPath(); sx.arc(PX(ax.xk(r)),PY(ax.yk(r)),4.5,0,6.2832); sx.fill(); });
+  sx.textAlign='right'; sx.fillStyle='#5C6D7C';
+  sx.fillText(y1.toFixed(0),L-5,PY(y1)+4); sx.fillText(y0.toFixed(0),L-5,PY(y0)+4);
+  sx.textAlign='center'; sx.fillText(x1.toFixed(1),PX(x1),H-Bo+15); sx.fillText(x0.toFixed(1),PX(x0),H-Bo+15);
+  sx.textAlign='left';
+}
+
+function addLog(){
+  const st = stats(), V = S.Lx*LY*LZ;
+  const NkT = p.length*KB*S.T;
+  const PV = S.Pema*1000*V*1e-27;
+  S.log.push({T:S.T, V, N:p.length, P:S.Pema, r:PV/NkT});
+  renderTable(); drawScatter();
+}
+function renderTable(){
+  const tb = document.querySelector('#tbl tbody');
+  tb.innerHTML = S.log.map((r,i)=>
+    `<tr><td>${i+1}</td><td>${r.T}</td><td>${r.V.toFixed(0)}</td><td>${r.N}</td><td>${r.P.toFixed(0)}</td><td>${r.r.toFixed(3)}</td></tr>`).join('');
+  document.getElementById('emptyNote').style.display = S.log.length ? 'none':'block';
+}
+
+/* ---------- UI ---------- */
+const BRIEF = {
+  free:'<b>สำรวจอิสระ</b> — ปรับได้ทุกตัวแปร ลองสังเกตว่าอะไรทำให้ความดันเพิ่ม และเพราะเหตุใด (อัตราการชนต่อวินาที หรือแรงต่อการชนหนึ่งครั้ง)',
+  boyle:'<b>กฎของบอยล์</b> — ตรึง T และ N ให้คงที่ เลื่อนลูกสูบเพื่อเปลี่ยน V บันทึกหลายจุดแล้วดูกราฟ P กับ 1/V ว่าเป็นเส้นตรงผ่านจุดกำเนิดหรือไม่',
+  charles:'<b>กฎของชาร์ล</b> — ลูกสูบจะเลื่อนอัตโนมัติเพื่อรักษาความดันให้คงที่ (เหมือนลูกโป่งในอากาศ) เปลี่ยน T แล้วบันทึก V ลองลากเส้นย้อนกลับหา V = 0 ว่าตัดแกน T ที่ค่าใด',
+  gay:'<b>กฎของเกย์-ลูสแซก</b> — ตรึงลูกสูบไว้ (V คงที่) เปลี่ยน T แล้วดู P สังเกตว่าโมเลกุลชนผนัง “แรงขึ้น” และ “ถี่ขึ้น” พร้อมกัน',
+  avogadro:'<b>กฎของอาโวกาโดร</b> — ตรึง T และรักษา P ให้คงที่ เพิ่ม–ลดจำนวนโมเลกุล แล้วดูว่า V เปลี่ยนตามอย่างไร'
+};
+const LOCKS = { free:[], boyle:['cT','cN'], charles:['cV','cN'], gay:['cV','cN'], avogadro:['cT','cV'] };
+
+function setMode(m){
+  S.mode = m; S.log = []; renderTable(); drawScatter();
+  document.querySelectorAll('.modes button').forEach(b=>b.setAttribute('aria-pressed', b.dataset.mode===m));
+  document.getElementById('brief').innerHTML = BRIEF[m];
+  ['cT','cV','cN'].forEach(id=>{
+    const el = document.getElementById(id);
+    const lock = LOCKS[m].includes(id);
+    el.classList.toggle('locked', lock);
+    el.querySelector('[data-lock]').style.display = lock ? 'inline':'none';
+    el.querySelector('input').disabled = lock;
+  });
+  S.Ptarget = (m==='charles'||m==='avogadro') ? (S.Pema||1200) : null;
+}
+
+const $ = id => document.getElementById(id);
+$('sT').oninput = e => { S.T = +e.target.value; $('lT').textContent = S.T+' K'; };
+$('sV').oninput = e => {
+  S.Lx = +e.target.value; $('lV').textContent = (S.Lx*LY*LZ).toFixed(0)+' nm³';
+  for(const q of p) if(q.x > S.Lx) q.x = S.Lx;
+};
+$('sN').oninput = e => {
+  const n = +e.target.value; $('lN').textContent = n;
+  while(p.length < n) p.push(mk());
+  while(p.length > n) p.pop();
+};
+$('gas').onchange = e => {
+  const old = S.mass; S.mass = parseFloat(e.target.value)*AMU;
+  const k = Math.sqrt(old/S.mass);
+  for(const q of p){ q.vx*=k; q.vy*=k; q.vz*=k; }   // T เท่าเดิม แต่ v เปลี่ยน
+};
+$('tracer').onchange = e => { S.tracer = e.target.checked; S.trail = []; };
+$('showv').onchange = e => S.showv = e.target.checked;
+$('log').onclick = addLog;
+$('clear').onclick = () => { S.log=[]; renderTable(); drawScatter(); };
+$('pause').onclick = e => { S.running = !S.running; e.target.textContent = S.running ? 'หยุดชั่วคราว':'เล่นต่อ'; };
+$('equal').onclick = () => {
+  const v = Math.sqrt(3*KB*S.T/S.mass)/1000;
+  for(const q of p){ const th = Math.random()*6.2832, ph = Math.acos(2*Math.random()-1);
+    q.vx = v*Math.sin(ph)*Math.cos(th); q.vy = v*Math.sin(ph)*Math.sin(th); q.vz = v*Math.cos(ph); }
+};
+document.querySelectorAll('.modes button').forEach(b => b.onclick = () => setMode(b.dataset.mode));
+
+/* ---------- ลูปหลัก ---------- */
+let acc = 0;
+function frame(){
+  if(S.running){ step(); acc++; }
+  if(acc >= 26){ measure(); acc = 0; }
+  draw();
+  const st = stats();
+  $('rP').textContent = S.Pema.toFixed(0);
+  $('rT').textContent = S.T;
+  $('rV').textContent = (S.Lx*LY*LZ).toFixed(0);
+  $('rN').textContent = p.length;
+  $('rVr').textContent = st.vrms.toFixed(0);
+  $('rE').textContent = (st.Ek*1e21).toFixed(2);
+  const NkT = p.length*KB*S.T, PV = S.Pema*1000*(S.Lx*LY*LZ)*1e-27;
+  $('rChk').textContent = NkT ? (PV/NkT).toFixed(3) : '–';
+  if(hitTime>0 && acc===0){
+    $('collrate').textContent = 'อัตราการชนผนัง ≈ ' + (wallHits/hitTime).toFixed(1) + ' ครั้งต่อพิโกวินาที';
+    wallHits = 0; hitTime = 0;
+  }
+  requestAnimationFrame(frame);
+}
+setInterval(drawHist, 260);
+setMode('free');
+$('lV').textContent = (S.Lx*LY*LZ).toFixed(0)+' nm³';
+renderTable(); drawScatter(); frame();
+</script>
+</body>
+</html>
