@@ -1,0 +1,1874 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ห้องปฏิบัติการคลื่นแม่เหล็กไฟฟ้า ม.6</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600;700&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script>
+if (window.tailwind) tailwind.config = {
+  theme: {
+    extend: {
+      fontFamily: {
+        head: ["Prompt", "sans-serif"],
+        body: ["Sarabun", "sans-serif"]
+      }
+    }
+  }
+};
+</script>
+<style>
+  body { font-family: "Sarabun", sans-serif; }
+  h1, h2, h3, .font-head { font-family: "Prompt", sans-serif; }
+  canvas { display: block; width: 100%; touch-action: none; }
+  input[type=range] { width: 100%; accent-color: #38bdf8; height: 28px; }
+  .tab-btn.active { background: #0ea5e9; color: #0f172a; border-color: #0ea5e9; }
+  .tab-btn.active .tab-sub { color: #0f172a; }
+  .chip.active { background: #e2e8f0; color: #0f172a; }
+  .opt.correct { border-color: #22c55e; background: rgba(34,197,94,0.12); }
+  .opt.wrong { border-color: #ef4444; background: rgba(239,68,68,0.12); }
+  .opt.dim { opacity: 0.75; }
+  .bar-fill { transition: width 0.15s linear; }
+  .kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+</style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen">
+
+<header class="border-b border-slate-700 bg-slate-900/95 sticky top-0 z-20 backdrop-blur">
+  <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <h1 class="text-xl md:text-2xl font-semibold text-sky-300">ห้องปฏิบัติการคลื่นแม่เหล็กไฟฟ้า</h1>
+      <p class="text-sm text-slate-400">สื่อการสอนเชิงโต้ตอบ ฟิสิกส์ ม.6 · Electromagnetic Waves Interactive Lab</p>
+    </div>
+    <nav class="flex flex-wrap gap-2" id="tabNav">
+      <button class="tab-btn active px-3 py-2 rounded-lg border border-slate-600 text-left" data-tab="m1">
+        <div class="font-head text-sm font-semibold">1 · คลื่นระนาบ 3 มิติ</div>
+        <div class="tab-sub text-xs text-slate-400">E, B, v และเฟส</div>
+      </button>
+      <button class="tab-btn px-3 py-2 rounded-lg border border-slate-600 text-left" data-tab="m2">
+        <div class="font-head text-sm font-semibold">2 · โพลารอยด์ 3 แผ่น</div>
+        <div class="tab-sub text-xs text-slate-400">กฎของมาลุส</div>
+      </button>
+      <button class="tab-btn px-3 py-2 rounded-lg border border-slate-600 text-left" data-tab="m3">
+        <div class="font-head text-sm font-semibold">3 · สเปกตรัมและการสื่อสาร</div>
+        <div class="tab-sub text-xs text-slate-400">แหล่งกำเนิดระดับอะตอม</div>
+      </button>
+      <button class="tab-btn px-3 py-2 rounded-lg border border-slate-600 text-left" data-tab="m4">
+        <div class="font-head text-sm font-semibold">4 · ควิซดักจุดเข้าใจผิด</div>
+        <div class="tab-sub text-xs text-slate-400">แนวข้อสอบ A-Level</div>
+      </button>
+    </nav>
+  </div>
+</header>
+
+<main class="max-w-7xl mx-auto px-4 py-5">
+
+<!-- ===================== MODULE 1 ===================== -->
+<section id="m1" class="tab-panel">
+  <div class="mb-4">
+    <h2 class="text-lg md:text-xl font-semibold">โมดูล 1: โครงสร้าง 3 มิติและเฟสของคลื่นระนาบ</h2>
+    <p class="text-slate-400 text-sm">สนามไฟฟ้า <span class="text-orange-400 font-semibold">E</span> อยู่ในแนวแกน y สนามแม่เหล็ก <span class="text-cyan-300 font-semibold">B</span> อยู่ในแนวแกน z และคลื่นเคลื่อนที่ในทิศ <span class="text-emerald-400 font-semibold">E × B</span> (แกน +x) ลากเมาส์หรือนิ้วบนภาพเพื่อหมุนมุมมอง</p>
+  </div>
+  <div class="grid lg:grid-cols-3 gap-4">
+    <div class="lg:col-span-2 bg-slate-800 rounded-xl p-3 border border-slate-700">
+      <canvas id="waveCanvas" height="500"></canvas>
+      <div class="flex flex-wrap items-center gap-2 mt-3">
+        <button id="m1Play" class="px-4 py-2 rounded-lg bg-sky-500 text-slate-900 font-semibold">หยุดชั่วคราว</button>
+        <button id="m1Step" class="px-4 py-2 rounded-lg bg-slate-700 border border-slate-600">ทีละเฟรม (1/24 คาบ)</button>
+        <button id="m1Reset" class="px-4 py-2 rounded-lg bg-slate-700 border border-slate-600">รีเซ็ตมุมมอง</button>
+        <label class="flex items-center gap-2 ml-auto text-sm bg-slate-900/60 px-3 py-2 rounded-lg border border-slate-700">
+          <input type="checkbox" id="m1Wrong" class="w-4 h-4 accent-rose-500">
+          <span>แสดง "แบบจำลองที่ผิด" (B ต่างเฟส 90°)</span>
+        </label>
+      </div>
+    </div>
+    <div class="space-y-4">
+      <div class="bg-slate-800 rounded-xl p-4 border border-slate-700 space-y-3">
+        <div>
+          <div class="flex justify-between text-sm"><span>ความถี่ f</span><span id="m1fVal" class="kbd text-sky-300"></span></div>
+          <input type="range" id="m1f" min="100" max="1000" step="10" value="200">
+        </div>
+        <div>
+          <div class="flex justify-between text-sm"><span>แอมพลิจูดสนามไฟฟ้า E₀</span><span id="m1EVal" class="kbd text-orange-300"></span></div>
+          <input type="range" id="m1E" min="1" max="10" step="0.1" value="6">
+        </div>
+        <div>
+          <div class="flex justify-between text-sm"><span>ตำแหน่งจุดวัด (probe) x</span><span id="m1xVal" class="kbd text-emerald-300"></span></div>
+          <input type="range" id="m1x" min="0" max="6" step="0.01" value="1.5">
+        </div>
+      </div>
+      <div class="bg-slate-800 rounded-xl p-4 border border-slate-700">
+        <h3 class="font-semibold text-sky-300 mb-2">ค่าที่คำนวณได้ (Real-time)</h3>
+        <div class="grid grid-cols-2 gap-x-3 gap-y-1 text-sm kbd">
+          <span class="text-slate-400">λ = c / f</span><span id="m1lam"></span>
+          <span class="text-slate-400">T = 1 / f</span><span id="m1T"></span>
+          <span class="text-slate-400">B₀ = E₀ / c</span><span id="m1B0" class="text-cyan-300"></span>
+          <span class="text-slate-400">I = E₀² / 2μ₀c</span><span id="m1I"></span>
+          <span class="text-slate-400">E ที่จุดวัด</span><span id="m1Ep" class="text-orange-300"></span>
+          <span class="text-slate-400">B ที่จุดวัด</span><span id="m1Bp" class="text-cyan-300"></span>
+          <span class="text-slate-400">c·B ที่จุดวัด</span><span id="m1cB"></span>
+          <span class="text-slate-400">ทิศพลังงาน S</span><span id="m1S"></span>
+        </div>
+        <p class="text-xs text-slate-400 mt-2">ภาพเคลื่อนที่ช้ากว่าจริงประมาณ 3 × 10⁸ เท่า (ในภาพคลื่นเคลื่อนที่ 1 m ต่อวินาที) ทุกความถี่จึงเคลื่อนที่เร็วเท่ากัน สังเกตได้จากจุดยอดคลื่น</p>
+      </div>
+      <div class="bg-slate-800 rounded-xl p-4 border border-slate-700">
+        <h3 class="font-semibold text-sky-300 mb-1">กราฟ E และ B ที่จุดวัดเทียบกับเวลา</h3>
+        <canvas id="phaseCanvas" height="150"></canvas>
+        <p id="m1PhaseNote" class="text-xs mt-2"></p>
+      </div>
+    </div>
+  </div>
+  <div class="grid md:grid-cols-3 gap-4 mt-4">
+    <div class="bg-slate-800 rounded-xl p-4 border border-slate-700">
+      <h3 class="font-semibold text-emerald-300 mb-1">กฎมือขวา E × B</h3>
+      <p class="text-sm text-slate-300">ชี้นิ้วทั้งสี่ตามทิศ E แล้วม้วนนิ้วไปหาทิศ B นิ้วหัวแม่มือชี้ทิศการเคลื่อนที่ของคลื่น ใช้วงจรเวียน x̂ → ŷ → ẑ → x̂ เช่น ŷ × ẑ = x̂ ครึ่งคาบต่อมา E และ B กลับทิศพร้อมกัน (−ŷ) × (−ẑ) = x̂ ทิศคลื่นจึงคงเดิม</p>
+    </div>
+    <div class="bg-slate-800 rounded-xl p-4 border border-slate-700">
+      <h3 class="font-semibold text-orange-300 mb-1">ทำไม E และ B ต้องเฟสตรงกัน</h3>
+      <p class="text-sm text-slate-300">คลื่นต้องนำพลังงานไปข้างหน้าตลอดเวลา ทิศพลังงานคือ S = (1/μ₀) E × B ถ้า B ต่างเฟส 90° ผลคูณ E·B จะเปลี่ยนเครื่องหมายทุก 1/4 คาบ พลังงานจะไหลกลับไปมา (เปิดช่อง "แบบจำลองที่ผิด" แล้วสังเกตลูกศร S สีแดง)</p>
+    </div>
+    <div class="bg-slate-800 rounded-xl p-4 border border-slate-700">
+      <h3 class="font-semibold text-rose-300 mb-1">หมายเหตุสำหรับครู</h3>
+      <p class="text-sm text-slate-300">ขนาดของ B ในภาพถูกขยายด้วย c เพื่อให้ยาวเท่ากับ E (B จริงเล็กกว่ามาก เช่น E₀ = 6 V/m ได้ B₀ = 20 nT) ส่วนเฟส 90° จริงพบได้เฉพาะบริเวณสนามใกล้ของสายอากาศหรือในคลื่นนิ่ง ไม่ใช่คลื่นเคลื่อนที่ในสุญญากาศ</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== MODULE 2 ===================== -->
+<section id="m2" class="tab-panel hidden">
+  <div class="mb-4">
+    <h2 class="text-lg md:text-xl font-semibold">โมดูล 2: ห้องทดลองโพลารอยด์ 3 แผ่นและกฎของมาลุส</h2>
+    <p class="text-slate-400 text-sm">มุมของแผ่นวัดจากแนวตั้ง แกนส่งผ่านแสดงด้วยเส้นสีเหลือง วงกลมสถานะใต้ลำแสงแสดงทิศของสนามไฟฟ้า ความยาวลูกศรแปรผันตามแอมพลิจูด (√I)</p>
+  </div>
+  <div class="grid lg:grid-cols-3 gap-4">
+    <div class="lg:col-span-2 space-y-4">
+      <div class="bg-slate-800 rounded-xl p-3 border border-slate-700">
+        <canvas id="polCanvas" height="330"></canvas>
+      </div>
+      <div class="bg-slate-800 rounded-xl p-4 border border-slate-700">
+        <h3 class="font-semibold text-sky-300 mb-3">มาตรวัดความเข้มแสง</h3>
+        <div id="polBars" class="space-y-2"></div>
+        <div id="polSteps" class="mt-4 text-sm kbd bg-slate-900/70 rounded-lg p-3 space-y-1 border border-slate-700"></div>
+      </div>
+    </div>
+    <div class="space-y-4">
+      <div class="bg-slate-800 rounded-xl p-4 border border-slate-700 space-y-3">
+        <div>
+          <div class="flex justify-between text-sm"><span>ความเข้มแสงต้น I₀ (ไม่โพลาไรซ์)</span><span id="pI0Val" class="kbd text-amber-300"></span></div>
+          <input type="range" id="pI0" min="10" max="200" step="1" value="100">
+        </div>
+        <div>
+          <div class="flex justify-between text-sm"><span>แผ่นที่ 1 (Polarizer) θ₁</span><span id="pA1Val" class="kbd text-amber-300"></span></div>
+          <input type="range" id="pA1" min="0" max="360" step="1" value="0">
+        </div>
+        <div>
+          <div class="flex justify-between items-center text-sm">
+            <label class="flex items-center gap-2"><input type="checkbox" id="pMidOn" class="w-4 h-4 accent-sky-400"> แผ่นที่ 2 (Middle Sheet) θ₂</label>
+            <span id="pA2Val" class="kbd text-amber-300"></span>
+          </div>
+          <input type="range" id="pA2" min="0" max="360" step="1" value="45">
+        </div>
+        <div>
+          <div class="flex justify-between text-sm"><span>แผ่นที่ 3 (Analyzer) θ₃</span><span id="pA3Val" class="kbd text-amber-300"></span></div>
+          <input type="range" id="pA3" min="0" max="360" step="1" value="90">
+        </div>
+        <div class="flex flex-wrap gap-2 pt-1">
+          <button class="pPreset px-3 py-1.5 rounded-lg bg-slate-700 border border-slate-600 text-sm" data-p="cross">ตั้งแผ่น 1, 3 ตั้งฉาก</button>
+          <button class="pPreset px-3 py-1.5 rounded-lg bg-slate-700 border border-slate-600 text-sm" data-p="mid45">ใส่แผ่นกลาง 45°</button>
+          <button class="pPreset px-3 py-1.5 rounded-lg bg-slate-700 border border-slate-600 text-sm" data-p="spin">หมุนแผ่นกลางอัตโนมัติ</button>
+        </div>
+      </div>
+      <div class="bg-amber-500/10 border border-amber-500/50 rounded-xl p-4">
+        <h3 class="font-semibold text-amber-300 mb-1">โจทย์ท้าทาย</h3>
+        <p class="text-sm text-slate-200">ถ้าแผ่นที่ 1 กับ 3 ตั้งฉากกัน (แสงมืดสนิท) ลองใส่แผ่นที่ 2 คั่นกลางที่มุม 45° แล้วสังเกตว่าทำไมแสงจึงกลับมาทะลุผ่านได้ ทั้งที่เราเพิ่ม "ตัวกรอง" เข้าไปอีกแผ่น</p>
+        <button id="pReveal" class="mt-2 px-3 py-1.5 rounded-lg bg-amber-400 text-slate-900 font-semibold text-sm">ดูคำอธิบาย</button>
+        <div id="pExplain" class="hidden mt-3 text-sm text-slate-200 space-y-2">
+          <p>แผ่นโพลารอยด์ไม่ได้ทำหน้าที่ "กรองทิ้ง" อย่างเดียว แต่ <b>ฉายองค์ประกอบของสนามไฟฟ้าลงบนแกนส่งผ่าน</b> แสงที่ออกมาจึงมีทิศโพลาไรเซชันใหม่ตามแกนของแผ่นนั้น</p>
+          <p>ไม่มีแผ่นกลาง: E หลังแผ่น 1 อยู่แนว 0° ตั้งฉากกับแกนแผ่น 3 (90°) องค์ประกอบที่ผ่านได้ = 0</p>
+          <p>มีแผ่นกลาง 45°: แผ่นกลางหมุนทิศ E ไปอยู่ที่ 45° ซึ่งมีองค์ประกอบตามแกนแผ่น 3 แล้ว</p>
+          <p class="kbd">I₃ = (I₀/2)·cos²45°·cos²45° = I₀/8</p>
+          <p>และโดยทั่วไป I₃ = (I₀/8)·sin²(2θ₂) มากที่สุดเมื่อ θ₂ = 45°</p>
+        </div>
+      </div>
+      <div class="bg-rose-500/10 border border-rose-500/50 rounded-xl p-4">
+        <h3 class="font-semibold text-rose-300 mb-1">จุดที่นักเรียนมักผิด</h3>
+        <p class="text-sm text-slate-200">ลองหมุน θ₁ ไปหลาย ๆ มุม แล้วดูว่า I₁ เปลี่ยนหรือไม่ แสงไม่โพลาไรซ์ไม่มีทิศ E ที่แน่นอน จึงไม่มีมุมให้ใช้ cos²θ แผ่นแรกจึงให้ <b>I₁ = I₀/2 เสมอ</b> และตั้งแต่แผ่นที่สองเป็นต้นไปจึงใช้มุมระหว่าง <b>แผ่นที่อยู่ติดกัน</b></p>
+      </div>
+      <div class="bg-slate-800 rounded-xl p-4 border border-slate-700">
+        <h3 id="polGraphTitle" class="font-semibold text-sky-300 mb-1">กราฟ I₃ เทียบกับมุม</h3>
+        <canvas id="polGraph" height="170"></canvas>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== MODULE 3 ===================== -->
+<section id="m3" class="tab-panel hidden">
+  <div class="mb-4">
+    <h2 class="text-lg md:text-xl font-semibold">โมดูล 3: สเปกตรัมคลื่นแม่เหล็กไฟฟ้าและกลไกระดับอะตอม</h2>
+    <p class="text-slate-400 text-sm">คลิกที่แถบสเปกตรัม กดปุ่มช่วงคลื่น หรือเลื่อนแถบความถี่ ทุกช่วงเคลื่อนที่ในสุญญากาศด้วยอัตราเร็ว c เท่ากัน สิ่งที่ต่างคือความถี่และพลังงานโฟตอน E = hf</p>
+  </div>
+  <div class="bg-slate-800 rounded-xl p-3 border border-slate-700">
+    <canvas id="specCanvas" height="120"></canvas>
+    <div class="flex flex-wrap gap-2 mt-3" id="bandBtns"></div>
+    <div class="mt-3">
+      <div class="flex justify-between text-sm"><span>ความถี่ (สเกลลอการิทึม)</span><span id="specFVal" class="kbd text-sky-300"></span></div>
+      <input type="range" id="specF" min="3" max="22" step="0.01" value="9.6">
+    </div>
+  </div>
+  <div class="grid lg:grid-cols-3 gap-4 mt-4">
+    <div class="bg-slate-800 rounded-xl p-4 border border-slate-700">
+      <h3 id="bandTitle" class="font-semibold text-xl mb-2"></h3>
+      <div class="grid grid-cols-2 gap-x-3 gap-y-1 text-sm kbd mb-3">
+        <span class="text-slate-400">ความถี่ f</span><span id="cF"></span>
+        <span class="text-slate-400">ความยาวคลื่น λ</span><span id="cL"></span>
+        <span class="text-slate-400">พลังงานโฟตอน</span><span id="cE"></span>
+        <span class="text-slate-400">(จูล)</span><span id="cJ"></span>
+        <span class="text-slate-400">ก่อไอออน?</span><span id="cIon"></span>
+      </div>
+      <div class="text-sm space-y-2">
+        <div><span class="text-slate-400">ช่วงของแถบนี้: </span><span id="cRange"></span></div>
+        <div><span class="text-amber-300 font-semibold">แหล่งกำเนิดระดับอะตอม/โมเลกุล: </span><span id="cSrc"></span></div>
+        <div><span class="text-sky-300 font-semibold">วิธีตรวจจับ: </span><span id="cDet"></span></div>
+        <div><span class="text-emerald-300 font-semibold">การประยุกต์ใช้: </span><span id="cApp"></span></div>
+        <div id="cNote" class="text-xs text-slate-300 bg-slate-900/70 border border-slate-700 rounded-lg p-2"></div>
+      </div>
+    </div>
+    <div class="bg-slate-800 rounded-xl p-4 border border-slate-700">
+      <h3 class="font-semibold text-sky-300 mb-1">ความยาวคลื่นเทียบกับขนาดวัตถุจริง</h3>
+      <canvas id="lamCanvas" height="250"></canvas>
+      <p id="lamNote" class="text-sm text-slate-300 mt-2"></p>
+    </div>
+    <div class="bg-slate-800 rounded-xl p-4 border border-slate-700">
+      <h3 class="font-semibold text-amber-300 mb-1">กลไกการเกิดคลื่นในระดับจุลภาค</h3>
+      <canvas id="mechCanvas" height="230"></canvas>
+      <p id="mechNote" class="text-sm text-slate-300 mt-2"></p>
+    </div>
+  </div>
+
+  <div class="bg-slate-800 rounded-xl p-4 border border-slate-700 mt-4">
+    <div class="flex flex-wrap items-center gap-2 mb-3">
+      <h3 class="font-semibold text-sky-300 mr-2">การสื่อสาร: ผลของสัญญาณรบกวน (Noise)</h3>
+      <button class="chip active px-3 py-1.5 rounded-full border border-slate-500 text-sm" data-sig="amfm">AM vs FM</button>
+      <button class="chip px-3 py-1.5 rounded-full border border-slate-500 text-sm" data-sig="ad">Analog vs Digital</button>
+      <button id="sigNew" class="px-3 py-1.5 rounded-lg bg-slate-700 border border-slate-600 text-sm ml-auto">สุ่มสัญญาณรบกวนใหม่</button>
+    </div>
+    <div class="grid lg:grid-cols-3 gap-4">
+      <div class="lg:col-span-2">
+        <canvas id="sigCanvas" height="470"></canvas>
+      </div>
+      <div class="space-y-3">
+        <div>
+          <div class="flex justify-between text-sm"><span>ระดับสัญญาณรบกวน σ</span><span id="sigNVal" class="kbd text-rose-300"></span></div>
+          <input type="range" id="sigN" min="0" max="0.9" step="0.01" value="0.3">
+        </div>
+        <div id="sigMetrics" class="text-sm kbd bg-slate-900/70 rounded-lg p-3 border border-slate-700 space-y-1"></div>
+        <div id="sigExplain" class="text-sm text-slate-300 space-y-2"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== MODULE 4 ===================== -->
+<section id="m4" class="tab-panel hidden">
+  <div class="mb-4 flex flex-wrap items-end justify-between gap-3">
+    <div>
+      <h2 class="text-lg md:text-xl font-semibold">โมดูล 4: ควิซดักจุดเข้าใจผิด (Misconception Trap Quiz)</h2>
+      <p class="text-slate-400 text-sm">เลือกคำตอบ แล้วอ่านเฉลยว่าทำไมตัวเลือกนั้นถูกหรือผิด ตอบได้ข้อละหนึ่งครั้ง</p>
+    </div>
+    <div class="flex items-center gap-3">
+      <div class="text-sm">คะแนน <span id="qScore" class="kbd text-emerald-300 text-lg">0</span> / <span id="qTotal" class="kbd">5</span></div>
+      <button id="qReset" class="px-3 py-1.5 rounded-lg bg-slate-700 border border-slate-600 text-sm">เริ่มใหม่</button>
+    </div>
+  </div>
+  <div class="flex flex-wrap gap-2 mb-4" id="qNav"></div>
+  <div id="qCard" class="bg-slate-800 rounded-xl p-5 border border-slate-700"></div>
+  <div id="qSummary" class="hidden mt-4 bg-slate-800 rounded-xl p-5 border border-emerald-600/60"></div>
+</section>
+
+</main>
+
+<footer class="max-w-7xl mx-auto px-4 pb-6 text-xs text-slate-500">
+  ค่าคงตัวที่ใช้: c = 2.998 × 10⁸ m/s, μ₀ = 4π × 10⁻⁷ T·m/A, h = 6.626 × 10⁻³⁴ J·s, 1 eV = 1.602 × 10⁻¹⁹ J · ขอบเขตของช่วงสเปกตรัมเป็นค่าประมาณ
+</footer>
+
+<script>
+(function () {
+  "use strict";
+
+  /* ================= shared helpers ================= */
+  const C = 2.998e8;
+  const MU0 = 4 * Math.PI * 1e-7;
+  const H = 6.626e-34;
+  const EV = 1.602e-19;
+  const DEG = Math.PI / 180;
+
+  const SUP = { "-": "⁻", "0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴", "5": "⁵", "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹" };
+  function sci(x, digits) {
+    if (x === 0) return "0";
+    const d = digits === undefined ? 3 : digits;
+    const e = Math.floor(Math.log10(Math.abs(x)));
+    if (e >= -2 && e <= 3) return Number(x.toPrecision(d)).toString();
+    const m = x / Math.pow(10, e);
+    const ms = Number(m.toPrecision(d)).toString();
+    const es = String(e).split("").map(function (ch) { return SUP[ch]; }).join("");
+    return ms + " × 10" + es;
+  }
+  function fmtLength(m) {
+    const a = Math.abs(m);
+    if (a >= 1000) return sci(m / 1000, 3) + " km";
+    if (a >= 1) return sci(m, 3) + " m";
+    if (a >= 1e-2) return sci(m * 100, 3) + " cm";
+    if (a >= 1e-3) return sci(m * 1000, 3) + " mm";
+    if (a >= 1e-6) return sci(m * 1e6, 3) + " μm";
+    if (a >= 1e-9) return sci(m * 1e9, 3) + " nm";
+    if (a >= 1e-12) return sci(m * 1e12, 3) + " pm";
+    return sci(m, 3) + " m";
+  }
+  function fmtFreq(f) {
+    if (f >= 1e12) return sci(f, 3) + " Hz";
+    if (f >= 1e9) return sci(f / 1e9, 3) + " GHz";
+    if (f >= 1e6) return sci(f / 1e6, 3) + " MHz";
+    if (f >= 1e3) return sci(f / 1e3, 3) + " kHz";
+    return sci(f, 3) + " Hz";
+  }
+  function fmtEnergyEV(e) {
+    if (e >= 1e6) return sci(e / 1e6, 3) + " MeV";
+    if (e >= 1e3) return sci(e / 1e3, 3) + " keV";
+    return sci(e, 3) + " eV";
+  }
+
+  function setupCanvas(canvas) {
+    const dpr = window.devicePixelRatio || 1;
+    const cssW = canvas.clientWidth || canvas.parentElement.clientWidth;
+    const cssH = Number(canvas.getAttribute("height"));
+    if (!canvas.dataset.h) canvas.dataset.h = String(cssH);
+    const h = Number(canvas.dataset.h);
+    canvas.style.height = h + "px";
+    canvas.width = Math.round(cssW * dpr);
+    canvas.height = Math.round(h * dpr);
+    const ctx = canvas.getContext("2d");
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    return { ctx: ctx, w: cssW, h: h };
+  }
+
+  function arrow(ctx, x1, y1, x2, y2, color, width, head) {
+    const hw = head === undefined ? 9 : head;
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = width || 2;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    const ang = Math.atan2(y2 - y1, x2 - x1);
+    const len = Math.hypot(x2 - x1, y2 - y1);
+    if (len < 2) return;
+    const hh = Math.min(hw, len * 0.6);
+    ctx.beginPath();
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - hh * Math.cos(ang - 0.4), y2 - hh * Math.sin(ang - 0.4));
+    ctx.lineTo(x2 - hh * Math.cos(ang + 0.4), y2 - hh * Math.sin(ang + 0.4));
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  function mulberry32(seed) {
+    let a = seed >>> 0;
+    return function () {
+      a = (a + 0x6D2B79F5) >>> 0;
+      let t = a;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function gaussFactory(rng) {
+    return function () {
+      let u = 0;
+      let v = 0;
+      while (u === 0) u = rng();
+      while (v === 0) v = rng();
+      return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+    };
+  }
+
+  /* ================= tabs ================= */
+  let activeTab = "m1";
+  const tabButtons = document.querySelectorAll(".tab-btn");
+  tabButtons.forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      activeTab = btn.dataset.tab;
+      tabButtons.forEach(function (b) { b.classList.toggle("active", b === btn); });
+      document.querySelectorAll(".tab-panel").forEach(function (p) { p.classList.toggle("hidden", p.id !== activeTab); });
+      resizeAll();
+    });
+  });
+
+  /* ================= MODULE 1 ================= */
+  const m1 = {
+    playing: true,
+    tVis: 0,
+    yaw: -38 * DEG,
+    pitch: 22 * DEG,
+    history: [],
+    canvas: document.getElementById("waveCanvas"),
+    phaseCanvas: document.getElementById("phaseCanvas"),
+    L: 6.0,
+    vVis: 1.0
+  };
+  const m1f = document.getElementById("m1f");
+  const m1E = document.getElementById("m1E");
+  const m1x = document.getElementById("m1x");
+  const m1Wrong = document.getElementById("m1Wrong");
+
+  document.getElementById("m1Play").addEventListener("click", function () {
+    m1.playing = !m1.playing;
+    this.textContent = m1.playing ? "หยุดชั่วคราว" : "เล่น";
+  });
+  document.getElementById("m1Step").addEventListener("click", function () {
+    m1.playing = false;
+    document.getElementById("m1Play").textContent = "เล่น";
+    const f = Number(m1f.value) * 1e6;
+    const lam = C / f;
+    const dt = lam / m1.vVis / 24;
+    advanceM1(dt);
+  });
+  document.getElementById("m1Reset").addEventListener("click", function () {
+    m1.yaw = -38 * DEG;
+    m1.pitch = 22 * DEG;
+  });
+  m1f.addEventListener("input", function () { m1.history = []; });
+  m1Wrong.addEventListener("change", function () { m1.history = []; });
+
+  (function enableDrag() {
+    let dragging = false;
+    let lx = 0;
+    let ly = 0;
+    m1.canvas.addEventListener("pointerdown", function (e) {
+      dragging = true;
+      lx = e.clientX;
+      ly = e.clientY;
+      m1.canvas.setPointerCapture(e.pointerId);
+    });
+    m1.canvas.addEventListener("pointermove", function (e) {
+      if (!dragging) return;
+      m1.yaw += (e.clientX - lx) * 0.008;
+      m1.pitch += (e.clientY - ly) * 0.008;
+      m1.pitch = Math.max(-80 * DEG, Math.min(80 * DEG, m1.pitch));
+      lx = e.clientX;
+      ly = e.clientY;
+    });
+    m1.canvas.addEventListener("pointerup", function () { dragging = false; });
+    m1.canvas.addEventListener("pointercancel", function () { dragging = false; });
+  })();
+
+  function m1Fields(xMeters, tVis) {
+    const f = Number(m1f.value) * 1e6;
+    const lam = C / f;
+    const phase = 2 * Math.PI * (xMeters - m1.vVis * tVis) / lam;
+    const e = Math.sin(-phase);
+    const b = m1Wrong.checked ? Math.sin(-phase + Math.PI / 2) : Math.sin(-phase);
+    return { e: e, b: b };
+  }
+
+  function advanceM1(dt) {
+    m1.tVis += dt;
+    const f = Number(m1f.value) * 1e6;
+    const lam = C / f;
+    const xp = Number(m1x.value);
+    const fl = m1Fields(xp, m1.tVis);
+    m1.history.push({ t: m1.tVis, e: fl.e, b: fl.b });
+    const span = 2.2 * lam / m1.vVis;
+    while (m1.history.length > 2 && m1.history[0].t < m1.tVis - span) m1.history.shift();
+  }
+
+  function project(p, cx, cy, s) {
+    const cyw = Math.cos(m1.yaw);
+    const syw = Math.sin(m1.yaw);
+    const x1 = p[0] * cyw - p[2] * syw;
+    const z1 = p[0] * syw + p[2] * cyw;
+    const cp = Math.cos(m1.pitch);
+    const sp = Math.sin(m1.pitch);
+    const y2 = p[1] * cp - z1 * sp;
+    return [cx + x1 * s, cy - y2 * s];
+  }
+
+  function drawM1() {
+    const st = setupCanvasCached(m1.canvas);
+    const ctx = st.ctx;
+    const w = st.w;
+    const h = st.h;
+    ctx.clearRect(0, 0, w, h);
+    const s = Math.min(w / 11.5, h / 5.6);
+    const cx = w / 2;
+    const cy = h / 2 + 10;
+    const P = function (x, y, z) { return project([x, y, z], cx, cy, s); };
+    const f = Number(m1f.value) * 1e6;
+    const lam = C / f;
+    const E0 = Number(m1E.value);
+    const A = 0.35 + 1.75 * E0 / 10;
+    const toW = function (xm) { return (xm / m1.L) * 10 - 5; };
+
+    // grid plane
+    ctx.strokeStyle = "rgba(148,163,184,0.10)";
+    ctx.lineWidth = 1;
+    for (let gx = -5; gx <= 5; gx += 1) {
+      const a = P(gx, 0, -2.2);
+      const b = P(gx, 0, 2.2);
+      ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
+    }
+    for (let gz = -2; gz <= 2; gz += 1) {
+      const a = P(-5, 0, gz);
+      const b = P(5, 0, gz);
+      ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke();
+    }
+
+    // axes
+    const ax0 = P(-5.4, 0, 0);
+    const ax1 = P(6.1, 0, 0);
+    arrow(ctx, ax0[0], ax0[1], ax1[0], ax1[1], "#94a3b8", 1.5, 10);
+    const yA = P(-5, 0, 0);
+    const yB = P(-5, 2.5, 0);
+    arrow(ctx, yA[0], yA[1], yB[0], yB[1], "rgba(251,146,60,0.7)", 1.2, 8);
+    const zB = P(-5, 0, 2.6);
+    arrow(ctx, yA[0], yA[1], zB[0], zB[1], "rgba(34,211,238,0.7)", 1.2, 8);
+    ctx.font = "13px Sarabun, sans-serif";
+    ctx.fillStyle = "#fdba74";
+    ctx.fillText("y (E)", yB[0] + 4, yB[1] - 4);
+    ctx.fillStyle = "#67e8f9";
+    ctx.fillText("z (B)", zB[0] + 4, zB[1] + 4);
+    ctx.fillStyle = "#cbd5e1";
+    ctx.fillText("x", ax1[0] + 6, ax1[1] + 4);
+
+    // field samples
+    const N = 260;
+    const ePts = [];
+    const bPts = [];
+    for (let i = 0; i <= N; i++) {
+      const xm = (i / N) * m1.L;
+      const fl = m1Fields(xm, m1.tVis);
+      const X = toW(xm);
+      ePts.push(P(X, A * fl.e, 0));
+      bPts.push(P(X, 0, A * fl.b));
+    }
+    const NV = Math.max(30, Math.min(90, Math.round(m1.L / lam * 12)));
+    for (let i = 0; i <= NV; i++) {
+      const xm = (i / NV) * m1.L;
+      const fl = m1Fields(xm, m1.tVis);
+      const X = toW(xm);
+      const o = P(X, 0, 0);
+      const pe = P(X, A * fl.e, 0);
+      const pb = P(X, 0, A * fl.b);
+      ctx.strokeStyle = "rgba(34,211,238,0.45)";
+      ctx.lineWidth = 1.3;
+      ctx.beginPath(); ctx.moveTo(o[0], o[1]); ctx.lineTo(pb[0], pb[1]); ctx.stroke();
+      ctx.strokeStyle = "rgba(251,146,60,0.55)";
+      ctx.beginPath(); ctx.moveTo(o[0], o[1]); ctx.lineTo(pe[0], pe[1]); ctx.stroke();
+    }
+    ctx.lineWidth = 2.6;
+    ctx.strokeStyle = "#22d3ee";
+    ctx.beginPath();
+    bPts.forEach(function (p, i) { if (i === 0) ctx.moveTo(p[0], p[1]); else ctx.lineTo(p[0], p[1]); });
+    ctx.stroke();
+    ctx.strokeStyle = "#fb923c";
+    ctx.beginPath();
+    ePts.forEach(function (p, i) { if (i === 0) ctx.moveTo(p[0], p[1]); else ctx.lineTo(p[0], p[1]); });
+    ctx.stroke();
+
+    // probe
+    const xp = Number(m1x.value);
+    const Xp = toW(xp);
+    const flp = m1Fields(xp, m1.tVis);
+    const op = P(Xp, 0, 0);
+    const pe = P(Xp, A * flp.e, 0);
+    const pb = P(Xp, 0, A * flp.b);
+    ctx.setLineDash([4, 4]);
+    const pl1 = P(Xp, -2.3, 0);
+    const pl2 = P(Xp, 2.3, 0);
+    ctx.strokeStyle = "rgba(52,211,153,0.5)";
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(pl1[0], pl1[1]); ctx.lineTo(pl2[0], pl2[1]); ctx.stroke();
+    ctx.setLineDash([]);
+    if (Math.abs(flp.e) > 0.02) arrow(ctx, op[0], op[1], pe[0], pe[1], "#f97316", 4, 12);
+    if (Math.abs(flp.b) > 0.02) arrow(ctx, op[0], op[1], pb[0], pb[1], "#06b6d4", 4, 12);
+    const Sval = flp.e * flp.b;
+    if (Math.abs(Sval) > 0.01) {
+      const sEnd = P(Xp + 1.6 * Sval, 0, 0);
+      arrow(ctx, op[0], op[1], sEnd[0], sEnd[1], Sval > 0 ? "#34d399" : "#f43f5e", 5, 13);
+    }
+    ctx.fillStyle = "#e2e8f0";
+    ctx.beginPath(); ctx.arc(op[0], op[1], 4, 0, Math.PI * 2); ctx.fill();
+    ctx.font = "bold 14px Prompt, sans-serif";
+    ctx.fillStyle = "#fdba74";
+    ctx.fillText("E", pe[0] + 6, pe[1] - 2);
+    ctx.fillStyle = "#67e8f9";
+    ctx.fillText("B", pb[0] + 6, pb[1] + 4);
+    ctx.fillStyle = Sval >= 0 ? "#6ee7b7" : "#fda4af";
+    if (Math.abs(Sval) > 0.01) {
+      const sEnd = P(Xp + 1.6 * Sval, 0, 0);
+      ctx.fillText("S", sEnd[0] + (Sval > 0 ? 6 : -16), sEnd[1] - 8);
+    }
+
+    // v arrow
+    const v0 = P(5.2, 0, 0);
+    const v1 = P(6.8, 0, 0);
+    arrow(ctx, v0[0], v0[1] + 70, v1[0], v1[1] + 70, "#34d399", 4, 14);
+    ctx.fillStyle = "#6ee7b7";
+    ctx.font = "bold 14px Prompt, sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("v = c (ทิศ E × B)", Math.min((v0[0] + v1[0]) / 2, w - 80), (v0[1] + v1[1]) / 2 + 98);
+    ctx.textAlign = "start";
+
+    // legend
+    ctx.font = "13px Sarabun, sans-serif";
+    ctx.fillStyle = "rgba(15,23,42,0.75)";
+    ctx.fillRect(10, 10, 250, m1Wrong.checked ? 86 : 68);
+    ctx.fillStyle = "#fb923c"; ctx.fillRect(20, 22, 18, 4);
+    ctx.fillStyle = "#e2e8f0"; ctx.fillText("สนามไฟฟ้า E (แกน y)", 46, 28);
+    ctx.fillStyle = "#22d3ee"; ctx.fillRect(20, 42, 18, 4);
+    ctx.fillStyle = "#e2e8f0"; ctx.fillText("สนามแม่เหล็ก B (แกน z, ขยาย ×c)", 46, 48);
+    ctx.fillStyle = "#34d399"; ctx.fillRect(20, 62, 18, 4);
+    ctx.fillStyle = "#e2e8f0"; ctx.fillText("ทิศการไหลของพลังงาน S ที่จุดวัด", 46, 68);
+    if (m1Wrong.checked) {
+      ctx.fillStyle = "#fda4af";
+      ctx.fillText("แบบจำลองผิด: S กลับทิศได้ (สีแดง)", 20, 88);
+    }
+  }
+
+  function drawPhaseGraph() {
+    const st = setupCanvasCached(m1.phaseCanvas);
+    const ctx = st.ctx;
+    const w = st.w;
+    const h = st.h;
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = "#0f172a";
+    ctx.fillRect(0, 0, w, h);
+    const mid = h / 2;
+    ctx.strokeStyle = "#334155";
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, mid); ctx.lineTo(w, mid); ctx.stroke();
+    const hist = m1.history;
+    if (hist.length < 2) return;
+    const f = Number(m1f.value) * 1e6;
+    const lam = C / f;
+    const span = 2 * lam / m1.vVis;
+    const t1 = m1.tVis;
+    const t0 = t1 - span;
+    const X = function (t) { return ((t - t0) / span) * (w - 10) + 5; };
+    const amp = h * 0.38;
+    ctx.lineWidth = 2.4;
+    ctx.strokeStyle = "#fb923c";
+    ctx.beginPath();
+    let started = false;
+    hist.forEach(function (p) { if (p.t < t0) return; const x = X(p.t); const y = mid - amp * p.e; if (!started) { ctx.moveTo(x, y); started = true; } else ctx.lineTo(x, y); });
+    ctx.stroke();
+    ctx.lineWidth = 2.4;
+    ctx.setLineDash([7, 5]);
+    ctx.strokeStyle = "#22d3ee";
+    ctx.beginPath();
+    started = false;
+    hist.forEach(function (p) { if (p.t < t0) return; const x = X(p.t); const y = mid - amp * p.b; if (!started) { ctx.moveTo(x, y); started = true; } else ctx.lineTo(x, y); });
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.font = "12px Sarabun, sans-serif";
+    ctx.fillStyle = "#fdba74"; ctx.fillText("E(t)", 8, 14);
+    ctx.fillStyle = "#67e8f9"; ctx.fillText("B(t) × c (เส้นประ)", 44, 14);
+    ctx.fillStyle = "#94a3b8"; ctx.fillText("เวลา →", w - 50, h - 6);
+  }
+
+  function updateM1Text() {
+    const f = Number(m1f.value) * 1e6;
+    const E0 = Number(m1E.value);
+    const lam = C / f;
+    const B0 = E0 / C;
+    const I = E0 * E0 / (2 * MU0 * C);
+    document.getElementById("m1fVal").textContent = fmtFreq(f);
+    document.getElementById("m1EVal").textContent = E0.toFixed(1) + " V/m";
+    document.getElementById("m1xVal").textContent = Number(m1x.value).toFixed(2) + " m";
+    document.getElementById("m1lam").textContent = fmtLength(lam);
+    document.getElementById("m1T").textContent = sci(1 / f, 3) + " s";
+    document.getElementById("m1B0").textContent = sci(B0, 3) + " T (" + (B0 * 1e9).toFixed(1) + " nT)";
+    document.getElementById("m1I").textContent = sci(I, 3) + " W/m²";
+    const fl = m1Fields(Number(m1x.value), m1.tVis);
+    const Ep = E0 * fl.e;
+    const Bp = B0 * fl.b;
+    document.getElementById("m1Ep").textContent = (Ep >= 0 ? "+" : "") + Ep.toFixed(2) + " V/m";
+    document.getElementById("m1Bp").textContent = (Bp >= 0 ? "+" : "") + (Bp * 1e9).toFixed(2) + " nT";
+    document.getElementById("m1cB").textContent = (C * Bp >= 0 ? "+" : "") + (C * Bp).toFixed(2) + " V/m";
+    const S = Ep * Bp / MU0;
+    const sEl = document.getElementById("m1S");
+    if (Math.abs(S) < 1e-6) { sEl.textContent = "≈ 0"; sEl.className = "text-slate-300"; }
+    else if (S > 0) { sEl.textContent = "+x (ไปข้างหน้า)"; sEl.className = "text-emerald-300"; }
+    else { sEl.textContent = "−x (ย้อนกลับ!)"; sEl.className = "text-rose-400"; }
+    const note = document.getElementById("m1PhaseNote");
+    if (m1Wrong.checked) {
+      note.innerHTML = "<span class='text-rose-300'>แบบจำลองที่ผิด: E สูงสุดเมื่อ B เป็นศูนย์ ผลคือ S กลับทิศทุก 1/4 คาบ พลังงานไม่ถูกส่งออกไป และขัดกับกฎของฟาราเดย์ จึงเป็นไปไม่ได้สำหรับคลื่นเคลื่อนที่</span>";
+    } else {
+      note.innerHTML = "<span class='text-emerald-300'>เส้นทึบ (E) และเส้นประ (B) ทับกันพอดี: ขึ้นสูงสุด เป็นศูนย์ และกลับทิศพร้อมกันเสมอ (เฟสตรงกัน) และ E = cB ทุกขณะ</span>";
+    }
+  }
+
+  /* ================= MODULE 2 ================= */
+  const pI0 = document.getElementById("pI0");
+  const pA1 = document.getElementById("pA1");
+  const pA2 = document.getElementById("pA2");
+  const pA3 = document.getElementById("pA3");
+  const pMidOn = document.getElementById("pMidOn");
+  let pSpin = false;
+
+  document.querySelectorAll(".pPreset").forEach(function (b) {
+    b.addEventListener("click", function () {
+      const p = b.dataset.p;
+      if (p === "cross") { pSpin = false; pA1.value = 0; pA3.value = 90; pMidOn.checked = false; }
+      if (p === "mid45") { pSpin = false; pA1.value = 0; pA3.value = 90; pMidOn.checked = true; pA2.value = 45; }
+      if (p === "spin") { pMidOn.checked = true; pSpin = !pSpin; }
+      updateM2();
+    });
+  });
+  [pI0, pA1, pA2, pA3].forEach(function (el) { el.addEventListener("input", function () { if (el === pA2) pSpin = false; updateM2(); }); });
+  pMidOn.addEventListener("change", updateM2);
+  document.getElementById("pReveal").addEventListener("click", function () {
+    const ex = document.getElementById("pExplain");
+    ex.classList.toggle("hidden");
+    this.textContent = ex.classList.contains("hidden") ? "ดูคำอธิบาย" : "ซ่อนคำอธิบาย";
+  });
+
+  function polState() {
+    const I0 = Number(pI0.value);
+    const a1 = Number(pA1.value);
+    const a2 = Number(pA2.value);
+    const a3 = Number(pA3.value);
+    const mid = pMidOn.checked;
+    const I1 = I0 / 2;
+    let I2 = I1;
+    let pol2 = a1;
+    let d12 = 0;
+    if (mid) {
+      d12 = a2 - a1;
+      I2 = I1 * Math.pow(Math.cos(d12 * DEG), 2);
+      pol2 = a2;
+    }
+    const d23 = a3 - pol2;
+    const I3 = I2 * Math.pow(Math.cos(d23 * DEG), 2);
+    return { I0: I0, I1: I1, I2: I2, I3: I3, a1: a1, a2: a2, a3: a3, mid: mid, d12: d12, d23: d23, pol2: pol2 };
+  }
+
+  function wrapAngle(d) {
+    let x = ((d % 360) + 360) % 360;
+    if (x > 180) x -= 360;
+    return x;
+  }
+
+  function updateM2() {
+    const s = polState();
+    document.getElementById("pI0Val").textContent = s.I0 + " W/m²";
+    document.getElementById("pA1Val").textContent = s.a1 + "°";
+    document.getElementById("pA2Val").textContent = s.mid ? s.a2 + "°" : "(ไม่ใช้)";
+    document.getElementById("pA3Val").textContent = s.a3 + "°";
+    pA2.disabled = !s.mid;
+    pA2.style.opacity = s.mid ? "1" : "0.4";
+    const bars = [
+      { label: "I₀ แสงต้น (ไม่โพลาไรซ์)", v: s.I0, col: "bg-amber-300" },
+      { label: "I₁ หลังแผ่นที่ 1", v: s.I1, col: "bg-amber-400" }
+    ];
+    if (s.mid) bars.push({ label: "I₂ หลังแผ่นที่ 2", v: s.I2, col: "bg-orange-400" });
+    bars.push({ label: (s.mid ? "I₃" : "I₂") + " หลังแผ่นสุดท้าย (Analyzer)", v: s.I3, col: "bg-rose-400" });
+    document.getElementById("polBars").innerHTML = bars.map(function (b) {
+      const pct = Math.max(0, Math.min(100, b.v / s.I0 * 100));
+      return "<div><div class='flex justify-between text-sm'><span>" + b.label + "</span><span class='kbd'>" + b.v.toFixed(2) + " W/m² (" + pct.toFixed(1) + "%)</span></div>" +
+        "<div class='h-4 bg-slate-900 rounded-full overflow-hidden border border-slate-700'><div class='bar-fill h-full " + b.col + "' style='width:" + pct + "%'></div></div></div>";
+    }).join("");
+    const lines = [];
+    lines.push("<div class='text-amber-300'>แผ่นที่ 1: I₁ = I₀ / 2 = " + s.I0.toFixed(1) + " / 2 = " + s.I1.toFixed(2) + " W/m² <span class='text-slate-400'>(ไม่ใช้ cos²θ เพราะแสงต้นไม่โพลาไรซ์)</span></div>");
+    if (s.mid) {
+      lines.push("<div>แผ่นที่ 2: มุมระหว่างแผ่น 1 กับ 2 = " + wrapAngle(s.d12).toFixed(0) + "° → I₂ = I₁ cos²(" + wrapAngle(s.d12).toFixed(0) + "°) = " + s.I1.toFixed(2) + " × " + Math.pow(Math.cos(s.d12 * DEG), 2).toFixed(3) + " = " + s.I2.toFixed(2) + " W/m²</div>");
+      lines.push("<div>แผ่นที่ 3: มุมระหว่างแผ่น 2 กับ 3 = " + wrapAngle(s.d23).toFixed(0) + "° → I₃ = I₂ cos²(" + wrapAngle(s.d23).toFixed(0) + "°) = " + s.I2.toFixed(2) + " × " + Math.pow(Math.cos(s.d23 * DEG), 2).toFixed(3) + " = " + s.I3.toFixed(2) + " W/m²</div>");
+    } else {
+      lines.push("<div>แผ่นสุดท้าย: มุมระหว่างแผ่น 1 กับ 3 = " + wrapAngle(s.d23).toFixed(0) + "° → I = I₁ cos²(" + wrapAngle(s.d23).toFixed(0) + "°) = " + s.I1.toFixed(2) + " × " + Math.pow(Math.cos(s.d23 * DEG), 2).toFixed(3) + " = " + s.I3.toFixed(2) + " W/m²</div>");
+    }
+    lines.push("<div class='text-slate-400'>แสงที่ออกมาโพลาไรซ์ตามแกนของแผ่นสุดท้าย (" + s.a3 + "°) ความเข้มที่ออก = " + (s.I3 / s.I0 * 100).toFixed(2) + "% ของ I₀</div>");
+    document.getElementById("polSteps").innerHTML = lines.join("");
+    document.getElementById("polGraphTitle").textContent = s.mid ? "กราฟ I₃ เทียบกับมุมแผ่นกลาง θ₂" : "กราฟความเข้มที่ออกเทียบกับมุมแผ่นสุดท้าย θ₃";
+  }
+
+  function drawPolarizerDisk(ctx, x, cy, ang, label, enabled) {
+    const rx = 16;
+    const ry = 70;
+    ctx.save();
+    ctx.globalAlpha = enabled ? 1 : 0.25;
+    ctx.fillStyle = "rgba(148,163,184,0.18)";
+    ctx.strokeStyle = "#94a3b8";
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.ellipse(x, cy, rx, ry, 0, 0, Math.PI * 2); ctx.fill(); ctx.stroke();
+    const sx = Math.sin(ang * DEG);
+    const sy = Math.cos(ang * DEG);
+    ctx.strokeStyle = "#facc15";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(x - sx * rx, cy + sy * ry);
+    ctx.lineTo(x + sx * rx, cy - sy * ry);
+    ctx.stroke();
+    ctx.fillStyle = "#e2e8f0";
+    ctx.font = "13px Prompt, sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(label, x, cy - ry - 10);
+    ctx.fillText(enabled ? ang + "°" : "ปิด", x, cy + ry + 18);
+    ctx.textAlign = "start";
+    ctx.restore();
+  }
+
+  function drawStateCircle(ctx, x, y, r, angDeg, amp, unpol) {
+    ctx.strokeStyle = "#475569";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.stroke();
+    if (amp <= 0.005) {
+      ctx.fillStyle = "#64748b";
+      ctx.font = "12px Sarabun, sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("มืด", x, y + 4);
+      ctx.textAlign = "start";
+      return;
+    }
+    const L = r * 0.85 * amp;
+    if (unpol) {
+      for (let k = 0; k < 6; k++) {
+        const a = k * 30 * DEG;
+        arrow(ctx, x, y, x + Math.sin(a) * L, y - Math.cos(a) * L, "#f87171", 1.5, 6);
+        arrow(ctx, x, y, x - Math.sin(a) * L, y + Math.cos(a) * L, "#f87171", 1.5, 6);
+      }
+      return;
+    }
+    const sx = Math.sin(angDeg * DEG);
+    const sy = Math.cos(angDeg * DEG);
+    arrow(ctx, x, y, x + sx * L, y - sy * L, "#f87171", 2.5, 8);
+    arrow(ctx, x, y, x - sx * L, y + sy * L, "#f87171", 2.5, 8);
+  }
+
+  function drawM2(time) {
+    const cv = document.getElementById("polCanvas");
+    const st = setupCanvasCached(cv);
+    const ctx = st.ctx;
+    const w = st.w;
+    const h = st.h;
+    ctx.clearRect(0, 0, w, h);
+    if (pSpin) {
+      pA2.value = String(Math.round((Number(pA2.value) + 0.6) % 360));
+      updateM2();
+    }
+    const s = polState();
+    const cy = 120;
+    const xs = 40;
+    const x1 = w * 0.26;
+    const x2 = w * 0.48;
+    const x3 = w * 0.70;
+    const xd = w - 40;
+    const seg = function (xa, xb, I) {
+      const a = Math.max(0, Math.min(1, I / s.I0));
+      const grd = ctx.createLinearGradient(0, cy - 14, 0, cy + 14);
+      grd.addColorStop(0, "rgba(253,224,71," + (0.15 * a) + ")");
+      grd.addColorStop(0.5, "rgba(253,224,71," + (0.15 + 0.85 * a) + ")");
+      grd.addColorStop(1, "rgba(253,224,71," + (0.15 * a) + ")");
+      ctx.fillStyle = grd;
+      ctx.fillRect(xa, cy - 6 - 10 * a, xb - xa, 12 + 20 * a);
+    };
+    seg(xs + 18, x1, s.I0);
+    seg(x1, s.mid ? x2 : x3, s.I1);
+    if (s.mid) seg(x2, x3, s.I2);
+    seg(x3, xd - 20, s.I3);
+    ctx.fillStyle = "#fde047";
+    ctx.beginPath(); ctx.arc(xs, cy, 18, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#e2e8f0";
+    ctx.font = "13px Prompt, sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("แหล่งกำเนิด", xs + 6, cy - 30);
+    ctx.textAlign = "start";
+    drawPolarizerDisk(ctx, x1, cy, s.a1, "แผ่นที่ 1", true);
+    drawPolarizerDisk(ctx, x2, cy, s.a2, "แผ่นที่ 2", s.mid);
+    drawPolarizerDisk(ctx, x3, cy, s.a3, "แผ่นที่ 3", true);
+    const glow = Math.max(0, Math.min(1, s.I3 / s.I0 * 2));
+    ctx.fillStyle = "rgb(" + Math.round(40 + 213 * glow) + "," + Math.round(40 + 184 * glow) + "," + Math.round(50 + 21 * glow) + ")";
+    ctx.fillRect(xd - 20, cy - 40, 30, 80);
+    ctx.strokeStyle = "#94a3b8";
+    ctx.strokeRect(xd - 20, cy - 40, 30, 80);
+    ctx.fillStyle = "#e2e8f0";
+    ctx.textAlign = "center";
+    ctx.fillText("ฉาก", xd - 5, cy - 50);
+    ctx.textAlign = "start";
+    const yc = 270;
+    const r = 30;
+    const cx0 = (xs + x1) / 2;
+    const cx1 = s.mid ? (x1 + x2) / 2 : (x1 + x3) / 2;
+    const cx2 = (x2 + x3) / 2;
+    const cx3 = (x3 + xd) / 2;
+    drawStateCircle(ctx, cx0, yc, r, 0, 1, true);
+    drawStateCircle(ctx, cx1, yc, r, s.a1, Math.sqrt(s.I1 / s.I0), false);
+    if (s.mid) drawStateCircle(ctx, cx2, yc, r, s.a2, Math.sqrt(s.I2 / s.I0), false);
+    drawStateCircle(ctx, cx3, yc, r, s.a3, Math.sqrt(s.I3 / s.I0), false);
+    ctx.font = "12px Sarabun, sans-serif";
+    ctx.fillStyle = "#cbd5e1";
+    ctx.textAlign = "center";
+    ctx.fillText("ไม่โพลาไรซ์ I₀", cx0, yc + r + 16);
+    ctx.fillText("I₁ = " + s.I1.toFixed(1), cx1, yc + r + 16);
+    if (s.mid) ctx.fillText("I₂ = " + s.I2.toFixed(1), cx2, yc + r + 16);
+    ctx.fillText((s.mid ? "I₃ = " : "I = ") + s.I3.toFixed(1), cx3, yc + r + 16);
+    ctx.fillStyle = "#94a3b8";
+    ctx.fillText("สถานะโพลาไรเซชัน (มองตามแนวลำแสง)", w / 2, yc - r - 10);
+    ctx.textAlign = "start";
+    drawPolGraph(s);
+  }
+
+  function drawPolGraph(s) {
+    const cv = document.getElementById("polGraph");
+    const st = setupCanvasCached(cv);
+    const ctx = st.ctx;
+    const w = st.w;
+    const h = st.h;
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = "#0f172a";
+    ctx.fillRect(0, 0, w, h);
+    const padL = 38;
+    const padB = 22;
+    const gw = w - padL - 8;
+    const gh = h - padB - 10;
+    let maxI = 0;
+    for (let a = 0; a <= 360; a += 2) {
+      const Ia = s.mid ? s.I1 * Math.pow(Math.cos((a - s.a1) * DEG), 2) * Math.pow(Math.cos((s.a3 - a) * DEG), 2) : s.I1 * Math.pow(Math.cos((a - s.a1) * DEG), 2);
+      if (Ia > maxI) maxI = Ia;
+    }
+    maxI = Math.max(maxI * 1.15, s.I0 * 0.05);
+    ctx.strokeStyle = "#334155";
+    ctx.lineWidth = 1;
+    ctx.font = "11px Sarabun, sans-serif";
+    ctx.fillStyle = "#94a3b8";
+    for (let a = 0; a <= 360; a += 90) {
+      const x = padL + (a / 360) * gw;
+      ctx.beginPath(); ctx.moveTo(x, 10); ctx.lineTo(x, 10 + gh); ctx.stroke();
+      ctx.fillText(a + "°", x - 8, h - 6);
+    }
+    [0, 0.5, 1].forEach(function (fr) {
+      const y = 10 + gh - fr * gh;
+      ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL + gw, y); ctx.stroke();
+      ctx.fillText((maxI * fr).toFixed(1), 2, y + 4);
+    });
+    ctx.strokeStyle = "#fb7185";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let a = 0; a <= 360; a += 2) {
+      let I;
+      if (s.mid) I = s.I1 * Math.pow(Math.cos((a - s.a1) * DEG), 2) * Math.pow(Math.cos((s.a3 - a) * DEG), 2);
+      else I = s.I1 * Math.pow(Math.cos((a - s.a1) * DEG), 2);
+      const x = padL + (a / 360) * gw;
+      const y = 10 + gh - (I / maxI) * gh;
+      if (a === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    const cur = s.mid ? s.a2 : s.a3;
+    const cx = padL + (cur / 360) * gw;
+    const cyv = 10 + gh - (s.I3 / maxI) * gh;
+    ctx.fillStyle = "#fde047";
+    ctx.beginPath(); ctx.arc(cx, cyv, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = "#cbd5e1";
+    ctx.fillText(s.mid ? "สูงสุด I₀/8 เมื่อแผ่นกลางอยู่กึ่งกลางระหว่างแผ่น 1 และ 3" : "I = (I₀/2)cos²(θ₃ − θ₁)", padL + 4, 22);
+  }
+
+  /* ================= MODULE 3 ================= */
+  const BANDS = [
+    { id: "radio", name: "คลื่นวิทยุ (Radio)", short: "วิทยุ", fmin: 3e3, fmax: 1e9, color: "#60a5fa",
+      src: "การสั่นของอิเล็กตรอนในตัวนำ เช่น สายอากาศไดโพลที่ต่อกับวงจรไฟฟ้ากระแสสลับ (ประจุที่มีความเร่ง) ในธรรมชาติเกิดจากอิเล็กตรอนเคลื่อนที่เป็นเกลียวในสนามแม่เหล็กของพัลซาร์และกาแล็กซี และการพลิกสปินของอิเล็กตรอนในอะตอมไฮโดรเจน (เส้น 21 cm)",
+      det: "สายอากาศ + วงจร LC ที่ปรับให้สั่นพ้อง f = 1/(2π√LC), กล้องโทรทรรศน์วิทยุ",
+      app: "วิทยุ AM/FM, โทรทัศน์ภาคพื้นดิน, RFID/NFC, MRI (คลื่นวิทยุราว 64 MHz ที่ 1.5 T), ดาราศาสตร์วิทยุ",
+      note: "สายอากาศที่เหมาะสมยาวประมาณ λ/2 และต้องวางขนานกับสนามไฟฟ้าของคลื่น จึงจะรับสัญญาณได้ดี" },
+    { id: "micro", name: "ไมโครเวฟ (Microwave)", short: "ไมโครเวฟ", fmin: 1e9, fmax: 3e11, color: "#34d399",
+      src: "กลุ่มอิเล็กตรอนในโพรงสั่นพ้องของแมกนีตรอน/ทรานซิสเตอร์ความถี่สูง และการเปลี่ยนระดับพลังงานการหมุนของโมเลกุล โมเลกุลมีขั้วอย่างน้ำหมุนตามสนามไฟฟ้าที่สลับทิศจึงดูดกลืนไมโครเวฟได้ดี",
+      det: "สายอากาศฮอร์น/จานพาราโบลา + ท่อนำคลื่น, ไดโอดตรวจจับ, เครื่องรับเรดาร์",
+      app: "เตาไมโครเวฟ 2.45 GHz, Wi-Fi, 4G/5G, Bluetooth, เรดาร์, ดาวเทียม, GPS (1.575 GHz)",
+      note: "2.45 GHz ไม่ใช่ความถี่สั่นพ้องของน้ำ ความร้อนเกิดจากโมเลกุลน้ำหมุนตามสนามแล้วชนกัน (dielectric heating) และไมโครเวฟเป็นรังสีไม่ก่อไอออน ไม่ทำให้อาหารเป็นสารกัมมันตรังสี" },
+    { id: "ir", name: "อินฟราเรด (Infrared)", short: "อินฟราเรด", fmin: 3e11, fmax: 4e14, color: "#f87171",
+      src: "การสั่นของพันธะในโมเลกุล (ยืด/งอ) และการแผ่รังสีความร้อนของวัตถุทุกชนิด เช่น ร่างกายคน (310 K) แผ่มากที่สุดที่ราว 9.3 μm",
+      det: "เทอร์โมไพล์, โบโลมิเตอร์, โฟโตไดโอด, กล้องถ่ายภาพความร้อน, ผิวหนังรับรู้ความร้อน",
+      app: "รีโมตคอนโทรล, กล้องถ่ายภาพความร้อน, ใยแก้วนำแสง (1310/1550 nm), IR spectroscopy",
+      note: "พลังงานโฟตอนอินฟราเรด (ราว 0.001–1.6 eV) ใกล้เคียงพลังงานการสั่นของพันธะเคมี จึงทำให้โมเลกุลสั่นแรงขึ้นและรู้สึกร้อน" },
+    { id: "vis", name: "แสงที่มองเห็น (Visible)", short: "แสง", fmin: 4e14, fmax: 7.5e14, color: "#facc15",
+      src: "การเปลี่ยนระดับพลังงานของอิเล็กตรอนวงนอก (valence) ในอะตอมหรือโมเลกุล และการแผ่รังสีความร้อนของวัตถุร้อนจัด เช่น ดวงอาทิตย์ราว 5800 K",
+      det: "ตา (เซลล์รูปแท่ง/รูปกรวย), เซ็นเซอร์ CCD/CMOS, โฟโตไดโอด, ฟิล์ม, คลอโรฟิลล์",
+      app: "การมองเห็น, การส่องสว่าง, เลเซอร์, การถ่ายภาพ, สเปกโทรสโกปีวิเคราะห์ธาตุ",
+      note: "ช่วงแคบมาก (ราว 400–700 nm) สีแดงความยาวคลื่นยาวที่สุด สีม่วงสั้นที่สุด ในแก้วแสงสีม่วงเคลื่อนที่ช้ากว่าสีแดง แต่ในสุญญากาศเร็วเท่ากัน" },
+    { id: "uv", name: "อัลตราไวโอเลต (UV)", short: "UV", fmin: 7.5e14, fmax: 3e16, color: "#a78bfa",
+      src: "การเปลี่ยนระดับพลังงานของอิเล็กตรอนวงนอกที่ห่างกันมาก การแตกตัวเป็นไอออนและรวมตัวกลับ เช่น ไอปรอทในหลอดฆ่าเชื้อ (253.7 nm) ดวงอาทิตย์",
+      det: "สารเรืองแสง, หลอดโฟโตมัลติพลายเออร์, โฟโตไดโอด SiC/GaN, ผิวหนัง (ผิวไหม้แดด)",
+      app: "ฆ่าเชื้อ UV-C, สร้างวิตามิน D, ตรวจธนบัตร, ลิโทกราฟีผลิตชิป",
+      note: "UV ส่วนใหญ่ไม่ก่อไอออน แต่ทำลาย DNA ได้ด้วยปฏิกิริยาเคมีแสง เฉพาะ UV ไกล (λ ต่ำกว่าราว 100–124 nm หรือพลังงานเกินราว 10–12 eV) จึงก่อไอออน" },
+    { id: "xray", name: "รังสีเอกซ์ (X-ray)", short: "X-ray", fmin: 3e16, fmax: 3e19, color: "#fb923c",
+      src: "นอกนิวเคลียส: (1) เบรมส์ชตราลุง อิเล็กตรอนพลังงานสูงถูกหน่วงในสนามของนิวเคลียสเป้า (สเปกตรัมต่อเนื่อง) (2) รังสีเอกซ์ลักษณะเฉพาะ อิเล็กตรอนตกลงเติมช่องว่างใน **วงใน (K, L)** ได้เส้นสเปกตรัมเฉพาะธาตุ",
+      det: "ฟิล์มเอกซเรย์, แผ่นตรวจวัดดิจิทัล, ไกเกอร์–มึลเลอร์, ห้องไอออไนเซชัน",
+      app: "ภาพถ่ายรังสี, CT scan, ตรวจสัมภาระสนามบิน, ผลึกศาสตร์รังสีเอกซ์",
+      note: "หลอดรังสีเอกซ์มีความยาวคลื่นต่ำสุด λmin = hc/eV ขึ้นกับความต่างศักย์เท่านั้น เช่น 30 kV ได้ 0.041 nm" },
+    { id: "gamma", name: "รังสีแกมมา (Gamma)", short: "แกมมา", fmin: 3e19, fmax: 1e22, color: "#f472b6",
+      src: "ในนิวเคลียส: นิวเคลียสในสถานะกระตุ้นเปลี่ยนระดับพลังงาน มักตามหลังการสลายตัวแบบแอลฟา/บีตา เช่น Co-60 → Ni-60* → γ 1.17 และ 1.33 MeV และการประลัยของอิเล็กตรอน–โพซิตรอน (0.511 MeV)",
+      det: "หัววัดประกายแสง NaI(Tl), หัววัดเจอร์เมเนียม, ไกเกอร์–มึลเลอร์, กล้องแกมมา",
+      app: "รังสีรักษามะเร็ง, ฆ่าเชื้อเครื่องมือแพทย์, ฉายรังสีอาหาร, เวชศาสตร์นิวเคลียร์และ PET",
+      note: "ช่วงพลังงานของรังสีเอกซ์และแกมมาซ้อนทับกัน สิ่งที่แยกทั้งสองคือแหล่งกำเนิด: เอกซ์มาจากอิเล็กตรอนนอกนิวเคลียส แกมมามาจากนิวเคลียส โฟตอนพลังงานเท่ากันแยกไม่ออก" }
+  ];
+  const OBJECTS = [
+    { s: 1e4, n: "ภูเขาลูกเล็ก", e: "⛰️" },
+    { s: 100, n: "สนามฟุตบอล", e: "🏟️" },
+    { s: 10, n: "อาคาร 3 ชั้น", e: "🏢" },
+    { s: 1.7, n: "ความสูงของคน", e: "🧍" },
+    { s: 0.22, n: "ลูกฟุตบอล", e: "⚽" },
+    { s: 0.025, n: "เหรียญ", e: "🪙" },
+    { s: 3e-3, n: "มด", e: "🐜" },
+    { s: 8e-5, n: "ความหนาเส้นผม", e: "〰️" },
+    { s: 1e-5, n: "เซลล์เม็ดเลือด", e: "🔴" },
+    { s: 1e-6, n: "แบคทีเรีย", e: "🦠" },
+    { s: 1e-7, n: "ไวรัส", e: "🧫" },
+    { s: 1e-8, n: "โมเลกุลโปรตีน", e: "🧬" },
+    { s: 1e-9, n: "โมเลกุลขนาดเล็ก", e: "💧" },
+    { s: 1e-10, n: "อะตอม", e: "⚛️" },
+    { s: 1e-12, n: "ระยะระหว่างนิวเคลียสในโมเลกุลหนัก (ระดับพิโกเมตร)", e: "🔹" },
+    { s: 1e-14, n: "นิวเคลียสของอะตอม", e: "🟣" }
+  ];
+
+  const specF = document.getElementById("specF");
+  let sigMode = "amfm";
+  let sigSeed = 12345;
+
+  function bandOf(f) {
+    for (let i = 0; i < BANDS.length; i++) if (f < BANDS[i].fmax) return BANDS[i];
+    return BANDS[BANDS.length - 1];
+  }
+
+  (function buildBandButtons() {
+    const wrap = document.getElementById("bandBtns");
+    BANDS.forEach(function (b) {
+      const btn = document.createElement("button");
+      btn.className = "px-3 py-1.5 rounded-full text-sm border font-head";
+      btn.style.borderColor = b.color;
+      btn.style.color = b.color;
+      btn.textContent = b.short;
+      btn.dataset.band = b.id;
+      btn.addEventListener("click", function () {
+        const lf = (Math.log10(b.fmin) + Math.log10(Math.min(b.fmax, 1e21))) / 2;
+        specF.value = String(lf);
+        updateM3();
+      });
+      wrap.appendChild(btn);
+    });
+  })();
+  specF.addEventListener("input", updateM3);
+  document.getElementById("specCanvas").addEventListener("pointerdown", function (e) {
+    const rect = this.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const lf = 3 + (x - 10) / (rect.width - 20) * 19;
+    specF.value = String(Math.max(3, Math.min(22, lf)));
+    updateM3();
+  });
+
+  function wavelengthToRGB(nm) {
+    let r = 0;
+    let g = 0;
+    let b = 0;
+    if (nm >= 380 && nm < 440) { r = -(nm - 440) / 60; b = 1; }
+    else if (nm < 490) { g = (nm - 440) / 50; b = 1; }
+    else if (nm < 510) { g = 1; b = -(nm - 510) / 20; }
+    else if (nm < 580) { r = (nm - 510) / 70; g = 1; }
+    else if (nm < 645) { r = 1; g = -(nm - 645) / 65; }
+    else if (nm <= 780) { r = 1; }
+    return "rgb(" + Math.round(255 * r) + "," + Math.round(255 * g) + "," + Math.round(255 * b) + ")";
+  }
+
+  function updateM3() {
+    const lf = Number(specF.value);
+    const f = Math.pow(10, lf);
+    const lam = C / f;
+    const Ej = H * f;
+    const Eev = Ej / EV;
+    const b = bandOf(f);
+    document.getElementById("specFVal").textContent = fmtFreq(f);
+    const t = document.getElementById("bandTitle");
+    t.textContent = b.name;
+    t.style.color = b.color;
+    document.getElementById("cF").textContent = fmtFreq(f);
+    document.getElementById("cL").textContent = fmtLength(lam);
+    document.getElementById("cE").textContent = fmtEnergyEV(Eev);
+    document.getElementById("cJ").textContent = sci(Ej, 3) + " J";
+    const ion = document.getElementById("cIon");
+    if (Eev >= 12) { ion.textContent = "ใช่ (เกินราว 10–12 eV)"; ion.className = "text-rose-400"; }
+    else if (Eev >= 10) { ion.textContent = "ก้ำกึ่ง (ราว 10–12 eV)"; ion.className = "text-amber-300"; }
+    else { ion.textContent = "ไม่ (ต่ำกว่าราว 10 eV)"; ion.className = "text-emerald-300"; }
+    document.getElementById("cRange").textContent = fmtFreq(b.fmin) + " – " + (b.id === "gamma" ? "สูงกว่า" : fmtFreq(b.fmax)) + "  ·  λ ≈ " + fmtLength(3e8 / b.fmax) + " – " + fmtLength(3e8 / b.fmin);
+    document.getElementById("cSrc").innerHTML = b.src.replace(/\*\*(.+?)\*\*/g, "<b>$1</b>");
+    document.getElementById("cDet").textContent = b.det;
+    document.getElementById("cApp").textContent = b.app;
+    document.getElementById("cNote").textContent = b.note;
+    document.querySelectorAll("#bandBtns button").forEach(function (btn) {
+      const on = btn.dataset.band === b.id;
+      btn.style.background = on ? b.color : "transparent";
+      btn.style.color = on ? "#0f172a" : BANDS.find(function (x) { return x.id === btn.dataset.band; }).color;
+    });
+    let best = OBJECTS[0];
+    let bestD = Infinity;
+    OBJECTS.forEach(function (o) {
+      const d = Math.abs(Math.log10(o.s) - Math.log10(lam));
+      if (d < bestD) { bestD = d; best = o; }
+    });
+    m3.obj = best;
+    document.getElementById("lamNote").innerHTML = "ความยาวคลื่น <b>" + fmtLength(lam) + "</b> ใกล้เคียงขนาดของ <b>" + best.n + "</b> (ราว " + fmtLength(best.s) + ")";
+    const mechText = {
+      radio: "อิเล็กตรอนในสายอากาศถูกแหล่งไฟฟ้ากระแสสลับผลักให้สั่นขึ้นลง (มีความเร่ง) จึงแผ่คลื่นที่มีสนามไฟฟ้าขนานกับสายอากาศ",
+      micro: "โมเลกุลน้ำ (มีขั้ว) พยายามหมุนตามสนามไฟฟ้าที่สลับทิศหลายพันล้านครั้งต่อวินาที แล้วชนโมเลกุลข้างเคียงจนเกิดความร้อน",
+      ir: "พันธะในโมเลกุลยืดหดเหมือนสปริง การเปลี่ยนระดับพลังงานการสั่นปล่อย/ดูดกลืนอินฟราเรด",
+      vis: "อิเล็กตรอนวงนอกตกจากระดับพลังงานสูงสู่ระดับต่ำ ปล่อยโฟตอนที่มีพลังงานเท่ากับผลต่างระดับ (ราว 1.6–3.1 eV)",
+      uv: "อิเล็กตรอนวงนอกตกผ่านช่องว่างพลังงานที่กว้างกว่าแสงที่มองเห็น หรืออิเล็กตรอนอิสระรวมตัวกลับเข้าอะตอม",
+      xray: "อิเล็กตรอนพลังงานสูงชนอิเล็กตรอนวง K ให้หลุดออก อิเล็กตรอนวง L ตกลงมาเติม ปล่อยรังสีเอกซ์ลักษณะเฉพาะ (Kα) ระดับ keV",
+      gamma: "นิวเคลียสที่อยู่ในสถานะกระตุ้น (หลังการสลายตัว) ปล่อยพลังงานส่วนเกินเป็นโฟตอนแกมมาระดับ MeV โดยจำนวนโปรตอนและนิวตรอนไม่เปลี่ยน"
+    };
+    document.getElementById("mechNote").textContent = mechText[b.id];
+    m3.band = b;
+    m3.f = f;
+    m3.lam = lam;
+  }
+  const m3 = { band: BANDS[1], f: 4e9, lam: 0.075, obj: OBJECTS[5] };
+
+  function drawSpectrum() {
+    const cv = document.getElementById("specCanvas");
+    const st = setupCanvasCached(cv);
+    const ctx = st.ctx;
+    const w = st.w;
+    const h = st.h;
+    ctx.clearRect(0, 0, w, h);
+    const x0 = 10;
+    const gw = w - 20;
+    const X = function (lf) { return x0 + (lf - 3) / 19 * gw; };
+    const top = 24;
+    const bh = 50;
+    BANDS.forEach(function (b) {
+      const a = X(Math.log10(b.fmin));
+      const e = X(Math.min(22, Math.log10(b.fmax)));
+      if (b.id === "vis") {
+        for (let i = 0; i < 40; i++) {
+          const nm = 700 - (300 * i) / 40;
+          ctx.fillStyle = wavelengthToRGB(nm);
+          ctx.fillRect(a + (e - a) * i / 40, top, (e - a) / 40 + 1, bh);
+        }
+      } else {
+        ctx.fillStyle = b.color + "55";
+        ctx.fillRect(a, top, e - a, bh);
+        ctx.fillStyle = "#e2e8f0";
+        ctx.font = "12px Prompt, sans-serif";
+        ctx.textAlign = "center";
+        if (e - a > 44) ctx.fillText(b.short, (a + e) / 2, top + bh / 2 + 4);
+        ctx.textAlign = "start";
+      }
+    });
+    ctx.fillStyle = "rgba(244,114,182,0.35)";
+    ctx.fillRect(X(18), top + bh + 2, X(20.5) - X(18), 6);
+    ctx.font = "11px Sarabun, sans-serif";
+    ctx.fillStyle = "#f9a8d4";
+    ctx.fillText("ช่วงที่ X/γ ซ้อนทับ", X(18), top + bh + 20);
+    ctx.fillStyle = "#94a3b8";
+    for (let lf = 4; lf <= 22; lf += 2) {
+      const x = X(lf);
+      ctx.fillRect(x, top + bh, 1, 4);
+      ctx.fillText("10" + String(lf).split("").map(function (ch) { return SUP[ch]; }).join(""), x - 9, h - 4);
+    }
+    ctx.fillText("ความถี่ (Hz) →   พลังงานโฟตอนเพิ่มขึ้น →", x0, 14);
+    const mx = X(Number(specF.value));
+    ctx.strokeStyle = "#ffffff";
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(mx, top - 6); ctx.lineTo(mx, top + bh + 6); ctx.stroke();
+    ctx.fillStyle = "#ffffff";
+    ctx.beginPath(); ctx.moveTo(mx - 7, top - 10); ctx.lineTo(mx + 7, top - 10); ctx.lineTo(mx, top - 2); ctx.closePath(); ctx.fill();
+  }
+
+  function drawLambda(time) {
+    const cv = document.getElementById("lamCanvas");
+    const st = setupCanvasCached(cv);
+    const ctx = st.ctx;
+    const w = st.w;
+    const h = st.h;
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = "#0f172a";
+    ctx.fillRect(0, 0, w, h);
+    const lamPx = (w - 40) / 3;
+    const mid = 80;
+    const amp = 45;
+    const b = m3.band;
+    let col = b.color;
+    if (b.id === "vis") col = wavelengthToRGB(m3.lam * 1e9);
+    const shift = (time * 0.0006 * lamPx) % lamPx;
+    ctx.strokeStyle = col;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    for (let x = 0; x <= w - 20; x += 2) {
+      const y = mid - amp * Math.sin(2 * Math.PI * (x - shift) / lamPx);
+      if (x === 0) ctx.moveTo(20 + x, y); else ctx.lineTo(20 + x, y);
+    }
+    ctx.stroke();
+    let xa = 20 + ((shift + lamPx / 4) % lamPx);
+    if (xa > 20 + 2 * lamPx) xa -= lamPx;
+    const xb = xa + lamPx;
+    ctx.strokeStyle = "#e2e8f0";
+    ctx.lineWidth = 1;
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.moveTo(xa, mid - amp - 6); ctx.lineTo(xa, mid + amp + 18); ctx.moveTo(xb, mid - amp - 6); ctx.lineTo(xb, mid + amp + 18); ctx.stroke();
+    ctx.setLineDash([]);
+    arrow(ctx, (xa + xb) / 2, mid + amp + 12, xa + 2, mid + amp + 12, "#e2e8f0", 1.5, 7);
+    arrow(ctx, (xa + xb) / 2, mid + amp + 12, xb - 2, mid + amp + 12, "#e2e8f0", 1.5, 7);
+    ctx.fillStyle = "#e2e8f0";
+    ctx.font = "13px Sarabun, sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("λ = " + fmtLength(m3.lam), (xa + xb) / 2, mid + amp + 30);
+    const objSize = Math.min(52, lamPx * 0.6);
+    ctx.font = objSize + "px sans-serif";
+    ctx.textBaseline = "middle";
+    ctx.fillText(m3.obj.e, w / 2, h - 50);
+    ctx.textBaseline = "alphabetic";
+    ctx.font = "12px Sarabun, sans-serif";
+    ctx.fillStyle = "#94a3b8";
+    ctx.fillText(m3.obj.n + " ≈ " + fmtLength(m3.obj.s), w / 2, h - 4);
+    ctx.textAlign = "start";
+  }
+
+  function drawMechanism(time) {
+    const cv = document.getElementById("mechCanvas");
+    const st = setupCanvasCached(cv);
+    const ctx = st.ctx;
+    const w = st.w;
+    const h = st.h;
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = "#0f172a";
+    ctx.fillRect(0, 0, w, h);
+    const t = time / 1000;
+    const cx = w / 2;
+    const cy = h / 2;
+    const id = m3.band.id;
+    ctx.font = "13px Sarabun, sans-serif";
+    if (id === "radio") {
+      ctx.strokeStyle = "#94a3b8";
+      ctx.lineWidth = 6;
+      ctx.beginPath(); ctx.moveTo(cx - 60, cy - 85); ctx.lineTo(cx - 60, cy - 6); ctx.moveTo(cx - 60, cy + 6); ctx.lineTo(cx - 60, cy + 85); ctx.stroke();
+      ctx.lineWidth = 1.5;
+      ctx.beginPath(); ctx.arc(cx - 110, cy, 14, 0, Math.PI * 2); ctx.stroke();
+      ctx.fillStyle = "#cbd5e1"; ctx.fillText("~", cx - 114, cy + 5);
+      ctx.beginPath(); ctx.moveTo(cx - 110, cy - 14); ctx.lineTo(cx - 110, cy - 6); ctx.lineTo(cx - 60, cy - 6); ctx.moveTo(cx - 110, cy + 14); ctx.lineTo(cx - 110, cy + 6); ctx.lineTo(cx - 60, cy + 6); ctx.stroke();
+      const ey = cy + 60 * Math.sin(t * 3);
+      ctx.fillStyle = "#38bdf8";
+      ctx.beginPath(); ctx.arc(cx - 60, ey, 7, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#0f172a"; ctx.fillText("−", cx - 64, ey + 4);
+      for (let k = 0; k < 4; k++) {
+        const r = ((t * 40 + k * 45) % 180) + 20;
+        ctx.strokeStyle = "rgba(96,165,250," + (1 - r / 200) + ")";
+        ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(cx - 60, cy, r, -0.7, 0.7); ctx.stroke();
+      }
+      const Ev = Math.sin(t * 3 - 1.5);
+      arrow(ctx, cx + 90, cy, cx + 90, cy - 40 * Ev, "#fb923c", 3, 9);
+      ctx.fillStyle = "#fdba74"; ctx.fillText("E ขนานเสา", cx + 60, cy + 70);
+      ctx.fillStyle = "#cbd5e1"; ctx.fillText("สายอากาศไดโพล", cx - 100, h - 8);
+    } else if (id === "micro") {
+      const Ef = Math.sin(t * 2.4);
+      const ang = Math.PI / 2 + (Math.PI / 2) * Math.tanh(3 * Ef);
+      for (let k = -2; k <= 2; k++) arrow(ctx, 30, cy + k * 34, 30, cy + k * 34 - 26 * Ef, "#fb923c", 2, 7);
+      ctx.fillStyle = "#fdba74"; ctx.fillText("E สลับทิศ", 8, 18);
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(ang);
+      ctx.fillStyle = "#ef4444";
+      ctx.beginPath(); ctx.arc(0, 0, 26, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#e2e8f0";
+      ctx.beginPath(); ctx.arc(-30, 22, 15, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(30, 22, 15, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#0f172a";
+      ctx.font = "bold 14px Prompt, sans-serif";
+      ctx.fillText("O", -6, 5);
+      ctx.fillText("H", -35, 27);
+      ctx.fillText("H", 25, 27);
+      ctx.font = "12px Sarabun, sans-serif";
+      ctx.fillStyle = "#fca5a5"; ctx.fillText("δ−", -8, -32);
+      ctx.fillStyle = "#e2e8f0"; ctx.fillText("δ+", -6, 52);
+      ctx.restore();
+      ctx.fillStyle = "#cbd5e1"; ctx.fillText("โมเลกุลน้ำหมุนตามสนามไฟฟ้า", cx - 80, h - 8);
+    } else if (id === "ir") {
+      const d = 70 + 18 * Math.sin(t * 6);
+      ctx.strokeStyle = "#94a3b8";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      const n = 14;
+      for (let i = 0; i <= n; i++) {
+        const x = cx - d / 2 + (d * i) / n;
+        const y = cy + (i % 2 === 0 ? 0 : (i % 4 === 1 ? -10 : 10));
+        if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      ctx.fillStyle = "#f87171";
+      ctx.beginPath(); ctx.arc(cx - d / 2 - 22, cy, 24, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#e2e8f0";
+      ctx.beginPath(); ctx.arc(cx + d / 2 + 14, cy, 15, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = "#0f172a";
+      ctx.font = "bold 13px Prompt, sans-serif";
+      ctx.fillText("C", cx - d / 2 - 27, cy + 5);
+      ctx.fillText("H", cx + d / 2 + 9, cy + 5);
+      const glow = 0.5 + 0.5 * Math.sin(t * 6);
+      ctx.strokeStyle = "rgba(248,113,113," + glow + ")";
+      ctx.lineWidth = 2;
+      for (let k = 0; k < 3; k++) {
+        ctx.beginPath();
+        for (let x = 0; x < 60; x += 2) {
+          const y = cy - 70 + k * 12 + 4 * Math.sin(x / 5 - t * 8);
+          if (x === 0) ctx.moveTo(cx + 70 + x, y); else ctx.lineTo(cx + 70 + x, y);
+        }
+        ctx.stroke();
+      }
+      ctx.font = "13px Sarabun, sans-serif";
+      ctx.fillStyle = "#cbd5e1"; ctx.fillText("การสั่นของพันธะ C–H (ยืด–หด)", cx - 90, h - 8);
+    } else if (id === "vis" || id === "uv") {
+      const radii = [28, 52, 76, 100];
+      radii.forEach(function (r) {
+        ctx.strokeStyle = "#475569";
+        ctx.lineWidth = 1.2;
+        ctx.beginPath(); ctx.arc(cx - 50, cy, r * 0.9, 0, Math.PI * 2); ctx.stroke();
+      });
+      ctx.fillStyle = "#f87171";
+      ctx.beginPath(); ctx.arc(cx - 50, cy, 9, 0, Math.PI * 2); ctx.fill();
+      const cyc = (t % 2.4) / 2.4;
+      const rHi = (id === "uv" ? 100 : 76) * 0.9;
+      const rLo = (id === "uv" ? 28 : 52) * 0.9;
+      const r = cyc < 0.45 ? rHi : (cyc < 0.6 ? rHi - (rHi - rLo) * (cyc - 0.45) / 0.15 : rLo);
+      const ea = -Math.PI / 4;
+      ctx.fillStyle = "#38bdf8";
+      ctx.beginPath(); ctx.arc(cx - 50 + r * Math.cos(ea), cy + r * Math.sin(ea), 6, 0, Math.PI * 2); ctx.fill();
+      if (cyc >= 0.6) {
+        const p = (cyc - 0.6) / 0.4;
+        const x0 = cx - 50 + rLo * Math.cos(ea) + 10;
+        const y0 = cy + rLo * Math.sin(ea) - 10;
+        const col = id === "uv" ? "#a78bfa" : wavelengthToRGB(Math.max(400, Math.min(700, m3.lam * 1e9)));
+        ctx.strokeStyle = col;
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        const len = 140 * p;
+        for (let s2 = 0; s2 <= len; s2 += 2) {
+          const xx = x0 + s2 * 0.8;
+          const yy = y0 - s2 * 0.45 + 6 * Math.sin(s2 / (id === "uv" ? 3 : 6));
+          if (s2 === 0) ctx.moveTo(xx, yy); else ctx.lineTo(xx, yy);
+        }
+        ctx.stroke();
+        ctx.fillStyle = col;
+        ctx.fillText("โฟตอน hf = ΔE", x0 + 60, y0 - 70);
+      }
+      ctx.fillStyle = "#cbd5e1";
+      ctx.fillText(id === "uv" ? "อิเล็กตรอนวงนอกตกผ่านช่องว่างพลังงานกว้าง" : "อิเล็กตรอนวงนอกเปลี่ยนระดับพลังงาน", 10, h - 8);
+    } else if (id === "xray") {
+      const radii = [30, 60, 90];
+      const names = ["K", "L", "M"];
+      radii.forEach(function (r, i) {
+        ctx.strokeStyle = "#475569";
+        ctx.lineWidth = 1.2;
+        ctx.beginPath(); ctx.arc(cx - 40, cy, r, 0, Math.PI * 2); ctx.stroke();
+        ctx.fillStyle = "#94a3b8";
+        ctx.fillText(names[i], cx - 40 + r - 4, cy + 16);
+      });
+      ctx.fillStyle = "#f87171";
+      ctx.beginPath(); ctx.arc(cx - 40, cy, 12, 0, Math.PI * 2); ctx.fill();
+      const cyc = (t % 3) / 3;
+      if (cyc < 0.3) {
+        const p = cyc / 0.3;
+        ctx.fillStyle = "#fde047";
+        ctx.beginPath(); ctx.arc(10 + p * (cx - 50 - 10), cy - 30 + p * 0, 6, 0, Math.PI * 2); ctx.fill();
+        ctx.fillText("อิเล็กตรอนพลังงานสูง", 8, 20);
+      }
+      const holeA = Math.PI;
+      const kx = cx - 40 + 30 * Math.cos(holeA);
+      const ky = cy + 30 * Math.sin(holeA) - 0;
+      if (cyc < 0.35) {
+        ctx.fillStyle = "#38bdf8";
+        ctx.beginPath(); ctx.arc(kx, ky, 6, 0, Math.PI * 2); ctx.fill();
+      } else {
+        ctx.strokeStyle = "#38bdf8";
+        ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.arc(kx, ky, 6, 0, Math.PI * 2); ctx.stroke();
+      }
+      const lx = cx - 40 + 60 * Math.cos(holeA);
+      const ly = cy + 60 * Math.sin(holeA);
+      if (cyc < 0.5) {
+        ctx.fillStyle = "#38bdf8";
+        ctx.beginPath(); ctx.arc(lx, ly, 6, 0, Math.PI * 2); ctx.fill();
+      } else if (cyc < 0.62) {
+        const p = (cyc - 0.5) / 0.12;
+        ctx.fillStyle = "#38bdf8";
+        ctx.beginPath(); ctx.arc(lx + (kx - lx) * p, ly + (ky - ly) * p, 6, 0, Math.PI * 2); ctx.fill();
+      } else {
+        ctx.fillStyle = "#38bdf8";
+        ctx.beginPath(); ctx.arc(kx, ky, 6, 0, Math.PI * 2); ctx.fill();
+        const p = (cyc - 0.62) / 0.38;
+        ctx.strokeStyle = "#fb923c";
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        for (let s2 = 0; s2 <= 160 * p; s2 += 1.5) {
+          const xx = kx - s2 * 0.2;
+          const yy = ky + s2 * 0.6 + 4 * Math.sin(s2 / 1.6);
+          if (s2 === 0) ctx.moveTo(xx, yy); else ctx.lineTo(xx, yy);
+        }
+        ctx.stroke();
+        ctx.fillStyle = "#fdba74";
+        ctx.fillText("Kα (keV)", kx + 14, ky + 70);
+      }
+      ctx.fillStyle = "#cbd5e1";
+      ctx.fillText("ช่องว่างวง K ถูกเติมจากวง L → รังสีเอกซ์ลักษณะเฉพาะ", 8, h - 8);
+    } else {
+      const cyc = (t % 3) / 3;
+      const jitter = cyc < 0.5 ? 2.5 : 0.4;
+      const rng = mulberry32(7);
+      for (let i = 0; i < 26; i++) {
+        const a = rng() * Math.PI * 2;
+        const r = Math.sqrt(rng()) * 34;
+        const x = cx - 30 + r * Math.cos(a) + jitter * Math.sin(t * 30 + i);
+        const y = cy + r * Math.sin(a) + jitter * Math.cos(t * 27 + i * 2);
+        ctx.fillStyle = i % 2 === 0 ? "#f87171" : "#94a3b8";
+        ctx.beginPath(); ctx.arc(x, y, 7, 0, Math.PI * 2); ctx.fill();
+      }
+      if (cyc < 0.5) {
+        ctx.strokeStyle = "rgba(244,114,182," + (0.5 + 0.5 * Math.sin(t * 12)) + ")";
+        ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(cx - 30, cy, 46, 0, Math.PI * 2); ctx.stroke();
+        ctx.fillStyle = "#f9a8d4";
+        ctx.fillText("นิวเคลียสในสถานะกระตุ้น (*)", 8, 20);
+      } else {
+        const p = (cyc - 0.5) / 0.5;
+        ctx.strokeStyle = "#f472b6";
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        for (let s2 = 0; s2 <= 200 * p; s2 += 1) {
+          const xx = cx + 20 + s2;
+          const yy = cy - s2 * 0.3 + 5 * Math.sin(s2 / 1.2);
+          if (s2 === 0) ctx.moveTo(xx, yy); else ctx.lineTo(xx, yy);
+        }
+        ctx.stroke();
+        ctx.fillStyle = "#f9a8d4";
+        ctx.fillText("γ (MeV)", cx + 60, cy - 60);
+        ctx.fillText("นิวเคลียสกลับสู่สถานะพื้น", 8, 20);
+      }
+      ctx.fillStyle = "#cbd5e1";
+      ctx.fillText("โปรตอน (แดง) และนิวตรอน (เทา) ในนิวเคลียส", 8, h - 8);
+    }
+  }
+
+  /* ---------- signals ---------- */
+  document.querySelectorAll(".chip").forEach(function (c) {
+    c.addEventListener("click", function () {
+      sigMode = c.dataset.sig;
+      document.querySelectorAll(".chip").forEach(function (x) { x.classList.toggle("active", x === c); });
+      computeSignals();
+    });
+  });
+  document.getElementById("sigNew").addEventListener("click", function () {
+    sigSeed = Math.floor(Math.random() * 1e9);
+    computeSignals();
+  });
+  document.getElementById("sigN").addEventListener("input", computeSignals);
+
+  let sigData = null;
+
+  function movingAvg(arr, win) {
+    const out = new Float64Array(arr.length);
+    let acc = 0;
+    const half = Math.floor(win / 2);
+    const pre = new Float64Array(arr.length + 1);
+    for (let i = 0; i < arr.length; i++) pre[i + 1] = pre[i] + arr[i];
+    for (let i = 0; i < arr.length; i++) {
+      const a = Math.max(0, i - half);
+      const b = Math.min(arr.length, i + half + 1);
+      acc = (pre[b] - pre[a]) / (b - a);
+      out[i] = acc;
+    }
+    return out;
+  }
+  function rmsErr(a, b, from, to) {
+    let s = 0;
+    let n = 0;
+    for (let i = from; i < to; i++) { const d = a[i] - b[i]; s += d * d; n++; }
+    return Math.sqrt(s / n);
+  }
+
+  function computeSignals() {
+    const sigma = Number(document.getElementById("sigN").value);
+    document.getElementById("sigNVal").textContent = sigma.toFixed(2);
+    const gauss = gaussFactory(mulberry32(sigSeed));
+    const N = 4000;
+    if (sigMode === "amfm") {
+      const fc = 40;
+      const fm = 2;
+      const mIdx = 0.6;
+      const df = 12;
+      const msg = new Float64Array(N);
+      const am = new Float64Array(N);
+      const fmS = new Float64Array(N);
+      let phase = 0;
+      for (let i = 0; i < N; i++) {
+        const t = i / N;
+        msg[i] = Math.sin(2 * Math.PI * fm * t);
+        const inst = fc + df * msg[i];
+        phase += 2 * Math.PI * inst / N;
+        am[i] = (1 + mIdx * msg[i]) * Math.cos(2 * Math.PI * fc * t) + sigma * gauss();
+        fmS[i] = Math.cos(phase) + sigma * gauss();
+      }
+      const preW = Math.round(N / fc / 6);
+      const amF = movingAvg(am, preW);
+      const fmF = movingAvg(movingAvg(fmS, preW), preW);
+      const gainAM = 1 / 0.955;
+      const rect = new Float64Array(N);
+      for (let i = 0; i < N; i++) rect[i] = Math.abs(amF[i]) * gainAM;
+      const env = movingAvg(movingAvg(rect, Math.round(N / fc)), Math.round(N / fc));
+      const amRec = new Float64Array(N);
+      for (let i = 0; i < N; i++) amRec[i] = (env[i] * Math.PI / 2 - 1) / mIdx;
+      const lim = new Float64Array(N);
+      const hyst = 0.15;
+      let stateLim = fmF[0] >= 0 ? 1 : -1;
+      const crossings = [];
+      for (let i = 0; i < N; i++) {
+        if (stateLim === 1 && fmF[i] < -hyst) { stateLim = -1; crossings.push(i); }
+        else if (stateLim === -1 && fmF[i] > hyst) { stateLim = 1; crossings.push(i); }
+        lim[i] = stateLim;
+      }
+      const inst = new Float64Array(N);
+      let last = -1;
+      for (let k = 1; k < crossings.length; k++) {
+        const a = crossings[k - 1];
+        const b = crossings[k];
+        const fInst = N / (2 * (b - a));
+        for (let i = a; i < b; i++) inst[i] = fInst;
+        last = b;
+      }
+      for (let i = 0; i < (crossings[0] || 0); i++) inst[i] = fc;
+      for (let i = Math.max(0, last); i < N; i++) inst[i] = fc;
+      const instS = movingAvg(movingAvg(inst, Math.round(N / fc)), Math.round(N / fc));
+      const fmRec = new Float64Array(N);
+      for (let i = 0; i < N; i++) fmRec[i] = (instS[i] - fc) / df;
+      const edge = Math.round(N * 0.05);
+      sigData = { mode: "amfm", msg: msg, am: am, fm: fmS, amRec: amRec, fmRec: fmRec, lim: lim,
+        eAM: rmsErr(amRec, msg, edge, N - edge), eFM: rmsErr(fmRec, msg, edge, N - edge), sigma: sigma };
+    } else {
+      const nb = 24;
+      const rngBits = mulberry32(99);
+      const bits = [];
+      for (let i = 0; i < nb; i++) bits.push(rngBits() > 0.5 ? 1 : 0);
+      const msg = new Float64Array(N);
+      for (let i = 0; i < N; i++) {
+        const t = i / N;
+        msg[i] = 0.55 * Math.sin(2 * Math.PI * 1.5 * t) + 0.3 * Math.sin(2 * Math.PI * 3.7 * t + 1);
+      }
+      const stages = 3;
+      const analog = Float64Array.from(msg);
+      for (let s = 0; s < stages; s++) for (let i = 0; i < N; i++) analog[i] = analog[i] + sigma * 0.35 * gauss();
+      const spb = N / nb;
+      let current = bits.slice();
+      let lastRx = null;
+      for (let s = 0; s < stages; s++) {
+        const rx = new Float64Array(N);
+        for (let i = 0; i < N; i++) {
+          const bIdx = Math.floor(i / spb);
+          rx[i] = (current[bIdx] ? 1 : -1) + sigma * 4 * gauss();
+        }
+        const regen = [];
+        for (let k = 0; k < nb; k++) {
+          let acc = 0;
+          const a = Math.floor(k * spb + spb * 0.4);
+          const b = Math.floor(k * spb + spb * 0.6);
+          for (let i = a; i < b; i++) acc += rx[i];
+          regen.push(acc >= 0 ? 1 : 0);
+        }
+        current = regen;
+        lastRx = rx;
+      }
+      let errs = 0;
+      for (let k = 0; k < nb; k++) if (current[k] !== bits[k]) errs++;
+      sigData = { mode: "ad", msg: msg, analog: analog, bits: bits, rx: lastRx, regen: current, errs: errs, nb: nb,
+        eA: rmsErr(analog, msg, 0, N), sigma: sigma };
+    }
+    renderSigText();
+  }
+
+  function renderSigText() {
+    const met = document.getElementById("sigMetrics");
+    const ex = document.getElementById("sigExplain");
+    if (!sigData) return;
+    if (sigData.mode === "amfm") {
+      met.innerHTML = "<div>ค่าคลาดเคลื่อน RMS ของเสียงที่กู้ได้</div>" +
+        "<div class='text-sky-300'>AM: " + sigData.eAM.toFixed(3) + "</div>" +
+        "<div class='text-violet-300'>FM: " + sigData.eFM.toFixed(3) + "</div>" +
+        "<div class='text-slate-400'>(0 = กู้ได้เหมือนต้นฉบับ)</div>";
+      ex.innerHTML = "<p><b class='text-sky-300'>AM</b> เก็บข้อมูลไว้ใน <b>แอมพลิจูด</b> สัญญาณรบกวนที่บวกเข้าไปในแอมพลิจูดจึงหลุดเข้าไปในเสียงโดยตรง</p>" +
+        "<p><b class='text-violet-300'>FM</b> เก็บข้อมูลไว้ใน <b>ความถี่</b> เครื่องรับใช้วงจรจำกัดแอมพลิจูด (limiter) ตัดยอดคลื่นให้สูงเท่ากันก่อน แล้วอ่านความถี่จากจังหวะการตัดผ่านศูนย์ สัญญาณรบกวนทางแอมพลิจูดจึงถูกกำจัดไปมาก</p>" +
+        "<p class='text-slate-400'>ข้อแลกเปลี่ยน: FM ใช้แบนด์วิดท์กว้างกว่า AM มาก (≈200 kHz เทียบกับ ≈10 kHz) และในระบบจริงเมื่อสัญญาณรบกวนแรงใกล้เคียงสัญญาณ FM จะเสียคุณภาพอย่างรวดเร็ว (threshold effect)</p>";
+    } else {
+      met.innerHTML = "<div>หลังผ่านสถานีทวนสัญญาณ 3 ทอด</div>" +
+        "<div class='text-sky-300'>แอนะล็อก: RMS error = " + sigData.eA.toFixed(3) + "</div>" +
+        "<div class='" + (sigData.errs ? "text-rose-300" : "text-emerald-300") + "'>ดิจิทัล: บิตผิด " + sigData.errs + " / " + sigData.nb + " บิต</div>";
+      ex.innerHTML = "<p><b class='text-sky-300'>แอนะล็อก</b> สถานีขยายสัญญาณขยายสัญญาณรบกวนไปด้วย สัญญาณรบกวนจึง <b>สะสม</b> ทุกทอดและแยกออกไม่ได้</p>" +
+        "<p><b class='text-emerald-300'>ดิจิทัล</b> แต่ละทอดใช้ระดับตัดสิน (threshold) อ่านว่าเป็น 0 หรือ 1 แล้ว <b>สร้างบิตใหม่ที่สะอาด</b> ส่งต่อ ถ้าสัญญาณรบกวนไม่เกินระดับตัดสิน ข้อมูลจะสมบูรณ์ 100%</p>" +
+        "<p class='text-slate-400'>ลองเพิ่ม σ ไปจนสุด: ดิจิทัลไม่มีบิตผิดเลยจนถึงระดับหนึ่ง แล้วจึงเริ่มผิดอย่างฉับพลัน (cliff effect) ส่วนแอนะล็อกเสื่อมลงทีละน้อยตั้งแต่สัญญาณรบกวนน้อย ๆ (กด \"สุ่มสัญญาณรบกวนใหม่\" เพื่อดูหลายครั้ง)</p>";
+    }
+  }
+
+  function drawSignals() {
+    const cv = document.getElementById("sigCanvas");
+    const st = setupCanvasCached(cv);
+    const ctx = st.ctx;
+    const w = st.w;
+    const h = st.h;
+    ctx.clearRect(0, 0, w, h);
+    ctx.fillStyle = "#0f172a";
+    ctx.fillRect(0, 0, w, h);
+    if (!sigData) return;
+    const rows = 5;
+    const rh = h / rows;
+    const drawTrace = function (arr, row, col, scale, lw, dash) {
+      const mid = rh * row + rh / 2 + 6;
+      ctx.save();
+      ctx.beginPath();
+      ctx.rect(0, rh * row, w, rh);
+      ctx.clip();
+      ctx.strokeStyle = col;
+      ctx.lineWidth = lw || 1.2;
+      ctx.setLineDash(dash || []);
+      ctx.beginPath();
+      const n = arr.length;
+      for (let x = 0; x < w - 20; x++) {
+        const i = Math.floor(x / (w - 20) * n);
+        const y = mid - arr[i] * scale * rh * 0.36;
+        if (x === 0) ctx.moveTo(10 + x, y); else ctx.lineTo(10 + x, y);
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+    };
+    const label = function (row, text, col) {
+      ctx.fillStyle = col || "#cbd5e1";
+      ctx.font = "12px Sarabun, sans-serif";
+      ctx.fillText(text, 12, rh * row + 14);
+      ctx.strokeStyle = "#1e293b";
+      ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(0, rh * (row + 1)); ctx.lineTo(w, rh * (row + 1)); ctx.stroke();
+    };
+    if (sigData.mode === "amfm") {
+      drawTrace(sigData.msg, 0, "#34d399", 1, 2);
+      label(0, "1) สัญญาณเสียงต้นฉบับ m(t)", "#6ee7b7");
+      drawTrace(sigData.am, 1, "#38bdf8", 0.6, 0.8);
+      label(1, "2) คลื่น AM ที่รับได้ (แอมพลิจูดเปลี่ยนตามเสียง) + สัญญาณรบกวน", "#7dd3fc");
+      drawTrace(sigData.msg, 2, "#64748b", 1, 1.5, [5, 4]);
+      drawTrace(sigData.amRec, 2, "#38bdf8", 1, 2);
+      label(2, "3) เสียงที่กู้จาก AM (เส้นประ = ต้นฉบับ)", "#7dd3fc");
+      drawTrace(sigData.fm, 3, "#a78bfa", 0.6, 0.8);
+      label(3, "4) คลื่น FM ที่รับได้ (ความถี่เปลี่ยนตามเสียง) + สัญญาณรบกวน", "#c4b5fd");
+      drawTrace(sigData.msg, 4, "#64748b", 1, 1.5, [5, 4]);
+      drawTrace(sigData.fmRec, 4, "#a78bfa", 1, 2);
+      label(4, "5) เสียงที่กู้จาก FM หลังผ่าน limiter (เส้นประ = ต้นฉบับ)", "#c4b5fd");
+    } else {
+      drawTrace(sigData.msg, 0, "#34d399", 1.2, 2);
+      label(0, "1) สัญญาณแอนะล็อกต้นฉบับ", "#6ee7b7");
+      drawTrace(sigData.msg, 1, "#64748b", 1.2, 1.5, [5, 4]);
+      drawTrace(sigData.analog, 1, "#38bdf8", 1.2, 1);
+      label(1, "2) แอนะล็อกหลังขยาย 3 ทอด (สัญญาณรบกวนสะสม)", "#7dd3fc");
+      const bitsArr = new Float64Array(sigData.rx.length);
+      const spb = sigData.rx.length / sigData.nb;
+      for (let i = 0; i < bitsArr.length; i++) bitsArr[i] = sigData.bits[Math.floor(i / spb)] ? 0.8 : -0.8;
+      drawTrace(bitsArr, 2, "#fbbf24", 1, 2);
+      label(2, "3) บิตดิจิทัลที่ส่ง", "#fcd34d");
+      const rxScaled = new Float64Array(sigData.rx.length);
+      for (let i = 0; i < rxScaled.length; i++) rxScaled[i] = sigData.rx[i] * 0.8;
+      drawTrace(rxScaled, 3, "#94a3b8", 1 / (1 + 2.2 * sigData.sigma), 0.8);
+      const mid3 = rh * 3 + rh / 2 + 6;
+      ctx.strokeStyle = "#f472b6";
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath(); ctx.moveTo(10, mid3); ctx.lineTo(w - 10, mid3); ctx.stroke();
+      ctx.setLineDash([]);
+      label(3, "4) สัญญาณดิจิทัลที่รับได้ทอดสุดท้าย + สัญญาณรบกวน (เส้นประชมพู = ระดับตัดสิน)", "#cbd5e1");
+      const regArr = new Float64Array(sigData.rx.length);
+      for (let i = 0; i < regArr.length; i++) regArr[i] = sigData.regen[Math.floor(i / spb)] ? 0.8 : -0.8;
+      drawTrace(regArr, 4, "#34d399", 1, 2);
+      for (let k = 0; k < sigData.nb; k++) {
+        if (sigData.regen[k] !== sigData.bits[k]) {
+          ctx.fillStyle = "rgba(244,63,94,0.35)";
+          ctx.fillRect(10 + (k / sigData.nb) * (w - 20), rh * 4 + 18, (w - 20) / sigData.nb, rh - 22);
+        }
+      }
+      label(4, "5) บิตที่สร้างใหม่ (regenerated) — แถบแดง = บิตที่ผิด", "#6ee7b7");
+    }
+  }
+
+  /* ================= MODULE 4: QUIZ ================= */
+  const QUIZ = [
+    {
+      topic: "เฟสของ E และ B",
+      q: "ณ ตำแหน่งและเวลาหนึ่ง สนามไฟฟ้าของคลื่นแสงที่เคลื่อนที่ในสุญญากาศมีค่าเป็นศูนย์ สนามแม่เหล็ก ณ ตำแหน่งและเวลาเดียวกันมีค่าเท่าใด",
+      opts: [
+        { t: "เป็นศูนย์เช่นกัน", ok: true, why: "ถูกต้อง ในคลื่นเคลื่อนที่ E และ B มีเฟสตรงกัน และ B = E/c ทุกจุดทุกเวลา เมื่อ E = 0 จึงได้ B = 0 พร้อมกัน (ดูโมดูล 1 กราฟ E และ B ทับกัน)" },
+        { t: "มีค่าสูงสุด เพราะพลังงานถ่ายจาก E ไปเก็บไว้ใน B", ok: false, why: "ผิด นี่คือความเข้าใจผิดที่ยืมภาพวงจร LC หรือลูกตุ้มมาใช้ ซึ่งพลังงานสลับไปมาด้วยเฟสต่าง 90° แต่คลื่นแม่เหล็กไฟฟ้าเป็นการ 'ขนส่ง' พลังงาน ไม่ใช่ 'เก็บ' พลังงาน ถ้าต่างเฟส 90° ทิศ E × B จะกลับไปมา พลังงานจะไม่ถูกส่งออกไป" },
+        { t: "มีค่าครึ่งหนึ่งของค่าสูงสุด", ok: false, why: "ผิด ไม่มีกฎใดให้ค่าครึ่งหนึ่ง ความสัมพันธ์ที่ถูกต้องคือ B = E/c ณ ขณะเดียวกัน" },
+        { t: "บอกไม่ได้ ขึ้นกับความถี่ของคลื่น", ok: false, why: "ผิด ความสัมพันธ์ B = E/c และเฟสที่ตรงกันเป็นจริงทุกความถี่ในสุญญากาศ ความถี่มีผลเพียงต่อความยาวคลื่น" }
+      ]
+    },
+    {
+      topic: "อัตราเร็วคลื่นต่างความถี่",
+      q: "ดาวดวงหนึ่งที่อยู่ไกล 1,000 ล้านปีแสงระเบิด ปล่อยคลื่นวิทยุและรังสีแกมมาออกมาพร้อมกัน ถ้าไม่คิดผลของสสารระหว่างทาง คลื่นใดเดินทางถึงโลกก่อน",
+      opts: [
+        { t: "รังสีแกมมา เพราะพลังงานโฟตอนสูงกว่า", ok: false, why: "ผิด โฟตอนไม่มีมวลนิ่ง พลังงานที่มากขึ้นปรากฏเป็นความถี่ที่สูงขึ้น (E = hf) ไม่ใช่อัตราเร็วที่มากขึ้น สัญชาตญาณ E = ½mv² ใช้กับโฟตอนไม่ได้" },
+        { t: "คลื่นวิทยุ เพราะความยาวคลื่นยาวกว่า จึงเลี้ยวเบนผ่านอวกาศได้ดี", ok: false, why: "ผิด การเลี้ยวเบนไม่เกี่ยวกับอัตราเร็วในสุญญากาศ ทั้งสองเคลื่อนที่ด้วยอัตราเร็ว c เท่ากัน" },
+        { t: "ถึงพร้อมกัน", ok: true, why: "ถูกต้อง c = 1/√(μ₀ε₀) ไม่มีความถี่อยู่ในสูตร ทุกความถี่จึงเคลื่อนที่เร็วเท่ากันในสุญญากาศ เมื่อ f เพิ่ม λ ลดลงโดย fλ คงที่ (ส่วนขยาย: ในอวกาศจริง อิเล็กตรอนอิสระทำให้คลื่นวิทยุความถี่ต่ำมาช้ากว่าเล็กน้อย ซึ่งเป็นผลของตัวกลาง ไม่ใช่สุญญากาศ)" },
+        { t: "ขึ้นกับแอมพลิจูดของคลื่นแต่ละชนิด", ok: false, why: "ผิด แอมพลิจูดบอกความเข้ม ไม่ได้บอกอัตราเร็ว คลื่นแรงหรืออ่อนก็เคลื่อนที่ด้วยอัตราเร็ว c เท่ากัน" }
+      ]
+    },
+    {
+      topic: "ทิศสายอากาศไดโพล",
+      q: "สถานีวิทยุใช้เสาอากาศส่งวางในแนวตั้ง นักเรียนถือวิทยุที่มีสายอากาศแบบแท่งยืดได้ ควรวางสายอากาศอย่างไรจึงรับสัญญาณได้ดีที่สุด",
+      opts: [
+        { t: "ชี้ปลายสายอากาศไปทางสถานีส่ง", ok: false, why: "ผิด สายอากาศไดโพลรับคลื่นได้เป็นศูนย์ตามแนวแกนของตัวเอง การชี้ไปหาสถานีทำให้แท่งขนานกับทิศการเคลื่อนที่ของคลื่น ซึ่งไม่มีสนามไฟฟ้าในทิศนั้นเลย (คลื่นเป็นคลื่นตามขวาง)" },
+        { t: "วางแนวตั้ง ขนานกับสนามไฟฟ้าของคลื่น", ok: true, why: "ถูกต้อง สนามไฟฟ้าของคลื่นขนานกับเสาส่ง (แนวตั้ง) และเป็นตัวผลักอิเล็กตรอนให้วิ่งไปตามแท่งรับ แท่งจึงต้องวางแนวเดียวกับ E" },
+        { t: "วางแนวระดับ ขนานกับสนามแม่เหล็กของคลื่น", ok: false, why: "ผิด สนามแม่เหล็กของคลื่นอยู่ในแนวระดับจริง แต่สายอากาศแบบแท่งตอบสนองต่อสนามไฟฟ้า แรงแม่เหล็กต่ออิเล็กตรอนเล็กกว่าแรงไฟฟ้า v/c เท่า ซึ่งน้อยมาก (สายอากาศแบบขดลวด/แท่งเฟอร์ไรต์เท่านั้นที่ใช้ B)" },
+        { t: "วางแนวใดก็ได้ เพราะคลื่นแผ่ออกไปทุกทิศ", ok: false, why: "ผิด คลื่นจากเสาแนวตั้งโพลาไรซ์แนวตั้ง ถ้าวางแท่งแนวนอน สนามไฟฟ้าผลักอิเล็กตรอนได้เพียงขวางแท่ง แทบไม่เกิดกระแส (กำลังแปรผันตาม cos² ของมุมระหว่างแท่งกับ E)" }
+      ]
+    },
+    {
+      topic: "แผ่นโพลารอยด์",
+      q: "แสงไม่โพลาไรซ์ความเข้ม 100 W/m² ผ่านแผ่นโพลารอยด์ 2 แผ่น แผ่นแรกมีแกนส่งผ่านแนวตั้ง แผ่นที่สองมีแกนส่งผ่านทำมุม 30° กับแนวตั้ง ความเข้มแสงที่ผ่านออกมาเป็นเท่าใด",
+      opts: [
+        { t: "25 W/m²", ok: false, why: "ผิด ได้จาก 100 × cos²60° ซึ่งใช้มุมผิด (มุมระหว่างแกนแผ่นที่อยู่ติดกันคือ 30° ไม่ใช่ 60°) และยังไม่หารสองที่แผ่นแรก" },
+        { t: "37.5 W/m²", ok: true, why: "ถูกต้อง แผ่นแรก: แสงไม่โพลาไรซ์ → I₁ = 100/2 = 50 W/m² (ไม่ขึ้นกับมุม) แผ่นที่สอง: I₂ = 50 × cos²30° = 50 × 3/4 = 37.5 W/m²" },
+        { t: "50 W/m²", ok: false, why: "ผิด นี่คือความเข้มหลังแผ่นแรกเท่านั้น ลืมคิดแผ่นที่สองซึ่งทำมุม 30° กับแผ่นแรก" },
+        { t: "75 W/m²", ok: false, why: "ผิด ได้จาก 100 × cos²30° คือใช้กฎของมาลุสกับแผ่นแรกทันที ทั้งที่แสงต้นไม่โพลาไรซ์ไม่มีทิศ E ที่แน่นอน แผ่นแรกต้องลดเหลือ I₀/2 เสมอ" }
+      ]
+    },
+    {
+      topic: "ทิศ E × B",
+      q: "คลื่นแม่เหล็กไฟฟ้ากำลังเคลื่อนที่ในทิศ +z ณ ตำแหน่งและเวลาหนึ่ง สนามไฟฟ้ามีทิศ −x สนามแม่เหล็ก ณ ตำแหน่งและเวลานั้นมีทิศใด",
+      opts: [
+        { t: "+x", ok: false, why: "ผิด B ต้องตั้งฉากกับ E เสมอ จึงอยู่แนวแกน x เดียวกับ E ไม่ได้" },
+        { t: "+y", ok: false, why: "ผิด ตรวจด้วย E × B: (−x̂) × (+ŷ) = −(x̂ × ŷ) = −ẑ ซึ่งชี้ไปทาง −z ตรงข้ามกับทิศการเคลื่อนที่ที่กำหนด" },
+        { t: "−y", ok: true, why: "ถูกต้อง ต้องได้ E × B ชี้ +z: (−x̂) × (−ŷ) = x̂ × ŷ = +ẑ ✓ ใช้วงจรเวียน x̂ → ŷ → ẑ → x̂" },
+        { t: "−z", ok: false, why: "ผิด B ต้องตั้งฉากกับทิศการเคลื่อนที่ของคลื่น (คลื่นตามขวาง) จึงอยู่ในแนวแกน z ไม่ได้" }
+      ]
+    }
+  ];
+  const quizState = { idx: 0, answers: QUIZ.map(function () { return null; }) };
+
+  function renderQuiz() {
+    const nav = document.getElementById("qNav");
+    nav.innerHTML = "";
+    QUIZ.forEach(function (q, i) {
+      const b = document.createElement("button");
+      const a = quizState.answers[i];
+      let cls = "px-3 py-1.5 rounded-lg border text-sm ";
+      if (a === null) cls += "border-slate-600 bg-slate-800";
+      else if (q.opts[a].ok) cls += "border-emerald-500 bg-emerald-500/15 text-emerald-200";
+      else cls += "border-rose-500 bg-rose-500/15 text-rose-200";
+      if (i === quizState.idx) cls += " ring-2 ring-sky-400";
+      b.className = cls;
+      b.textContent = "ข้อ " + (i + 1) + " · " + q.topic;
+      b.addEventListener("click", function () { quizState.idx = i; renderQuiz(); });
+      nav.appendChild(b);
+    });
+    const q = QUIZ[quizState.idx];
+    const ans = quizState.answers[quizState.idx];
+    const card = document.getElementById("qCard");
+    let html = "<div class='text-sm text-sky-300 mb-1 font-head'>ข้อ " + (quizState.idx + 1) + " / " + QUIZ.length + " · " + q.topic + "</div>";
+    html += "<p class='text-lg mb-4'>" + q.q + "</p><div class='grid md:grid-cols-2 gap-3'>";
+    q.opts.forEach(function (o, i) {
+      let cls = "opt text-left p-3 rounded-lg border border-slate-600 bg-slate-900/50 hover:border-sky-400 transition";
+      if (ans !== null) {
+        if (o.ok) cls += " correct";
+        else if (i === ans) cls += " wrong";
+        else cls += " dim";
+      }
+      html += "<button class='" + cls + "' data-i='" + i + "'" + (ans !== null ? " disabled" : "") + "><span class='font-head text-sky-300 mr-2'>" + "กขคง"[i] + ".</span>" + o.t + "</button>";
+    });
+    html += "</div>";
+    if (ans !== null) {
+      const right = q.opts[ans].ok;
+      html += "<div class='mt-4 p-4 rounded-lg " + (right ? "bg-emerald-500/10 border border-emerald-500/50" : "bg-rose-500/10 border border-rose-500/50") + "'>";
+      html += "<div class='font-head font-semibold mb-2 " + (right ? "text-emerald-300" : "text-rose-300") + "'>" + (right ? "ถูกต้อง!" : "ยังไม่ถูก — ลองอ่านเหตุผลของแต่ละตัวเลือก") + "</div><ul class='space-y-2 text-sm'>";
+      q.opts.forEach(function (o, i) {
+        html += "<li class='" + (o.ok ? "text-emerald-200" : "text-slate-300") + "'><b>" + "กขคง"[i] + ". " + o.t + "</b> — " + o.why + "</li>";
+      });
+      html += "</ul></div>";
+    }
+    html += "<div class='flex justify-between mt-4'>";
+    html += "<button id='qPrev' class='px-4 py-2 rounded-lg bg-slate-700 border border-slate-600 text-sm'" + (quizState.idx === 0 ? " disabled style='opacity:0.4'" : "") + ">← ข้อก่อนหน้า</button>";
+    html += "<button id='qNext' class='px-4 py-2 rounded-lg bg-sky-500 text-slate-900 font-semibold text-sm'" + (quizState.idx === QUIZ.length - 1 ? " disabled style='opacity:0.4'" : "") + ">ข้อถัดไป →</button></div>";
+    card.innerHTML = html;
+    card.querySelectorAll(".opt").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        if (quizState.answers[quizState.idx] !== null) return;
+        quizState.answers[quizState.idx] = Number(btn.dataset.i);
+        renderQuiz();
+      });
+    });
+    const prev = document.getElementById("qPrev");
+    const next = document.getElementById("qNext");
+    prev.addEventListener("click", function () { if (quizState.idx > 0) { quizState.idx--; renderQuiz(); } });
+    next.addEventListener("click", function () { if (quizState.idx < QUIZ.length - 1) { quizState.idx++; renderQuiz(); } });
+    const score = quizState.answers.reduce(function (s, a, i) { return s + (a !== null && QUIZ[i].opts[a].ok ? 1 : 0); }, 0);
+    document.getElementById("qScore").textContent = String(score);
+    document.getElementById("qTotal").textContent = String(QUIZ.length);
+    const done = quizState.answers.every(function (a) { return a !== null; });
+    const sum = document.getElementById("qSummary");
+    if (done) {
+      sum.classList.remove("hidden");
+      const wrongTopics = QUIZ.filter(function (q2, i) { return !q2.opts[quizState.answers[i]].ok; }).map(function (q2) { return q2.topic; });
+      sum.innerHTML = "<h3 class='font-head font-semibold text-emerald-300 text-lg'>สรุปผล: " + score + " / " + QUIZ.length + " ข้อ</h3>" +
+        (wrongTopics.length ? "<p class='text-sm mt-2'>ประเด็นที่ควรทบทวน: <b class='text-amber-300'>" + wrongTopics.join(", ") + "</b> (ทบทวนได้ในโมดูล 1–2)</p>" : "<p class='text-sm mt-2'>ยอดเยี่ยม ไม่ติดกับดักความเข้าใจผิดเลย</p>");
+    } else {
+      sum.classList.add("hidden");
+    }
+  }
+  document.getElementById("qReset").addEventListener("click", function () {
+    quizState.idx = 0;
+    quizState.answers = QUIZ.map(function () { return null; });
+    renderQuiz();
+  });
+
+  /* ================= canvas cache & loop ================= */
+  const canvasState = new Map();
+  function setupCanvasCached(canvas) {
+    let st = canvasState.get(canvas);
+    const cssW = canvas.clientWidth;
+    if (!st || st.w !== cssW) {
+      st = setupCanvas(canvas);
+      canvasState.set(canvas, st);
+    }
+    return st;
+  }
+  function resizeAll() { canvasState.clear(); }
+  window.addEventListener("resize", resizeAll);
+
+  let lastTs = null;
+  function loop(ts) {
+    const dt = lastTs === null ? 0 : Math.min(0.05, (ts - lastTs) / 1000);
+    lastTs = ts;
+    if (activeTab === "m1") {
+      if (m1.playing) advanceM1(dt);
+      drawM1();
+      drawPhaseGraph();
+      updateM1Text();
+    } else if (activeTab === "m2") {
+      drawM2(ts);
+    } else if (activeTab === "m3") {
+      drawSpectrum();
+      drawLambda(ts);
+      drawMechanism(ts);
+      drawSignals();
+    }
+    requestAnimationFrame(loop);
+  }
+
+  updateM2();
+  updateM3();
+  computeSignals();
+  renderQuiz();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
