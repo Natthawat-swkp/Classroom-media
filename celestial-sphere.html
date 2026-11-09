@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ทรงกลมท้องฟ้า — ระบบพิกัดขอบฟ้าและศูนย์สูตรฟ้า</title>
+<style>
+:root{--bg:#0d1420;--panel:#16202f;--line:#2a3a52;--txt:#e6edf6;--mut:#93a4bb;
+--hor:#4fc3f7;--eq:#ffb74d;--mer:#e57373;--star:#fff176;--ok:#81c784}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--txt);font-family:Tahoma,"TH Sarabun New",sans-serif;font-size:15px}
+header{padding:8px 12px;border-bottom:1px solid var(--line)}
+header h1{font-size:17px;margin:0}
+header p{margin:2px 0 0;color:var(--mut);font-size:12px}
+main{display:flex;flex-wrap:wrap;gap:10px;padding:10px}
+#stage{flex:1 1 520px;min-width:280px;position:relative}
+canvas{width:100%;height:70vh;display:block;background:radial-gradient(circle at 50% 45%,#16233a,#0a0f18 70%);
+border-radius:10px;touch-action:none;cursor:grab}
+#hint{position:absolute;left:8px;bottom:8px;font-size:11px;color:var(--mut);background:#0009;padding:3px 6px;border-radius:5px;pointer-events:none}
+aside{flex:1 1 300px;max-width:440px;display:flex;flex-direction:column;gap:8px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px}
+.card h2{font-size:14px;margin:0 0 6px;color:var(--mut);font-weight:normal}
+.seg{display:flex;gap:4px}
+.seg button{flex:1}
+button{background:#22324a;color:var(--txt);border:1px solid var(--line);border-radius:7px;padding:8px 6px;font:inherit;font-size:13px;cursor:pointer}
+button.on{background:#2d5a88;border-color:#4f8cc9}
+button:active{transform:scale(.97)}
+.row{display:flex;align-items:center;gap:8px;margin:6px 0}
+.row label{min-width:88px;font-size:13px}
+input[type=range]{flex:1;accent-color:#4f8cc9}
+input[type=number]{width:74px;background:#0d1420;color:var(--txt);border:1px solid var(--line);border-radius:6px;padding:5px;font:inherit;font-size:13px}
+.val{min-width:64px;text-align:right;font-variant-numeric:tabular-nums}
+table{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
+td{padding:3px 4px;border-bottom:1px solid var(--line)}
+td:last-child{text-align:right}
+tr.hor td:first-child{color:var(--hor)} tr.eq td:first-child{color:var(--eq)}
+.dim{opacity:.45}
+.chips{display:flex;flex-wrap:wrap;gap:4px}
+.chips button{flex:0 0 auto;padding:6px 8px;font-size:12px}
+.toggles{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;font-size:13px}
+.toggles label{display:flex;align-items:center;gap:5px}
+.note{font-size:12px;color:var(--mut);margin:4px 0 0;line-height:1.5}
+#status{font-size:13px;line-height:1.6}
+.hidden{display:none}
+@media (max-width:640px){main{padding:6px}aside{max-width:none}}
+</style>
+</head>
+<body>
+<header>
+<h1>ทรงกลมท้องฟ้า: ระบบพิกัดขอบฟ้า (A, h) และระบบพิกัดศูนย์สูตรฟ้า (α, δ)</h1>
+<p>17.1 การระบุตำแหน่งวัตถุท้องฟ้า · มุมทิศ A วัดจากทิศเหนือตามเข็มนาฬิกา 0°–360° · H = LST − α</p>
+</header>
+<main>
+<div id="stage">
+<canvas id="cv"></canvas>
+<div id="hint">ลากดาว ★ เพื่อย้าย · ลากพื้นที่ว่างเพื่อหมุนมุมมอง</div>
+</div>
+<aside>
+<div class="card">
+<h2>ระบบพิกัดที่แสดงกริด / ลากตาม</h2>
+<div class="seg">
+<button id="mHor" class="on">ขอบฟ้า (A, h)</button>
+<button id="mEq">ศูนย์สูตรฟ้า (α, δ)</button>
+</div>
+</div>
+
+<div class="card">
+<h2>ค่าพิกัดของดาว ★ <button id="hideVals" style="float:right;padding:3px 8px;font-size:11px">ซ่อนค่า</button></h2>
+<table id="vals">
+<tr class="hor"><td>มุมทิศ A</td><td id="vA"></td></tr>
+<tr class="hor"><td>มุมเงย h</td><td id="vH"></td></tr>
+<tr class="hor"><td>ระยะเซนิธ z = 90° − h</td><td id="vZ"></td></tr>
+<tr class="eq"><td>ไรต์แอสเซนชัน α</td><td id="vRA"></td></tr>
+<tr class="eq"><td>เดคลิเนชัน δ</td><td id="vDec"></td></tr>
+<tr class="eq"><td>มุมชั่วโมง H = LST − α</td><td id="vHA"></td></tr>
+</table>
+<div id="status" class="note"></div>
+</div>
+
+<div class="card">
+<h2>ผู้สังเกตและเวลา</h2>
+<div class="row"><label>ละติจูด φ</label><input type="range" id="lat" min="-90" max="90" step="0.5" value="16.5"><span class="val" id="latV"></span></div>
+<div class="chips">
+<button data-lat="16.5">กำแพงเพชร 16.5°N</button><button data-lat="0">ศูนย์สูตร 0°</button>
+<button data-lat="45">45°N</button><button data-lat="90">ขั้วโลกเหนือ</button><button data-lat="-33.9">ซิดนีย์ 33.9°S</button>
+</div>
+<div class="row"><label>LST (ชม.)</label><input type="range" id="lst" min="0" max="24" step="0.05" value="6"><span class="val" id="lstV"></span></div>
+<div class="seg"><button id="play">▶ หมุนท้องฟ้า</button><button id="speed">ความเร็ว ×1</button></div>
+<p class="note">เปลี่ยนละติจูดหรือเวลา: ดาวคงค่า α, δ (ติดกับทรงกลมฟ้า) ส่วน A, h เปลี่ยน</p>
+</div>
+
+<div class="card">
+<h2>ป้อนค่าพิกัดเอง</h2>
+<div id="inHor">
+<div class="row"><label>A (°)</label><input type="number" id="iA" min="0" max="360" step="0.1"><label style="min-width:auto">h (°)</label><input type="number" id="iH" min="-90" max="90" step="0.1"></div>
+</div>
+<div id="inEq" class="hidden">
+<div class="row"><label>α (ชม.)</label><input type="number" id="iRA" min="0" max="24" step="0.01"><label style="min-width:auto">δ (°)</label><input type="number" id="iDec" min="-90" max="90" step="0.1"></div>
+</div>
+<button id="apply" style="width:100%">ตั้งตำแหน่งดาว</button>
+<h2 style="margin-top:8px">ดาวสำเร็จรูป</h2>
+<div class="chips" id="presets"></div>
+</div>
+
+<div class="card">
+<h2>สิ่งที่แสดง</h2>
+<div class="toggles">
+<label><input type="checkbox" id="tGrid" checked>กริดพิกัด</label>
+<label><input type="checkbox" id="tMer" checked>เส้นเมริเดียน</label>
+<label><input type="checkbox" id="tZen" checked>จุดเหนือศีรษะ Z</label>
+<label><input type="checkbox" id="tPole" checked>ขั้วฟ้าเหนือ/ใต้</label>
+<label><input type="checkbox" id="tEqu" checked>ศูนย์สูตรฟ้า</label>
+<label><input type="checkbox" id="tArc" checked>ส่วนโค้งวัดมุม</label>
+<label><input type="checkbox" id="tPath">เส้นทางรายวัน</label>
+<label><input type="checkbox" id="tAxis">แกนโลก/ฉากละติจูด</label>
+</div>
+<div class="seg" style="margin-top:6px"><button data-view="std">มุมมองเฉียง</button><button data-view="top">มองจากบน</button><button data-view="south">มองไปทางเหนือ</button></div>
+</div>
+</aside>
+</main>
+
+<script>
+"use strict";
+/* ===== คณิตศาสตร์พิกัด (ตรวจเทียบกับ Python แล้ว) =====
+   กรอบขอบฟ้า: x = ตะวันออก, y = เหนือ, z = เหนือศีรษะ
+   A วัดจากเหนือตามเข็มนาฬิกา (N→E→S→W), H เป็นบวกทางตะวันตก */
+const D2R=Math.PI/180, R2D=180/Math.PI;
+const norm360=a=>((a%360)+360)%360;
+function eqToHor(Hdeg,dec,lat){
+  const H=Hdeg*D2R,d=dec*D2R,p=lat*D2R;
+  const sh=Math.sin(d)*Math.sin(p)+Math.cos(d)*Math.cos(p)*Math.cos(H);
+  const h=Math.asin(Math.max(-1,Math.min(1,sh)));
+  const A=Math.atan2(-Math.cos(d)*Math.sin(H), Math.sin(d)*Math.cos(p)-Math.cos(d)*Math.cos(H)*Math.sin(p));
+  return {A:norm360(A*R2D),h:h*R2D};
+}
+function horToEq(Adeg,hdeg,lat){
+  const A=Adeg*D2R,h=hdeg*D2R,p=lat*D2R;
+  const sd=Math.sin(h)*Math.sin(p)+Math.cos(h)*Math.cos(p)*Math.cos(A);
+  const d=Math.asin(Math.max(-1,Math.min(1,sd)));
+  const H=Math.atan2(-Math.sin(A)*Math.cos(h), Math.sin(h)*Math.cos(p)-Math.cos(h)*Math.cos(A)*Math.sin(p));
+  return {H:norm360(H*R2D),dec:d*R2D};
+}
+const horVec=(A,h)=>[Math.cos(h*D2R)*Math.sin(A*D2R),Math.cos(h*D2R)*Math.cos(A*D2R),Math.sin(h*D2R)];
+const vecHor=v=>({A:norm360(Math.atan2(v[0],v[1])*R2D),h:Math.asin(Math.max(-1,Math.min(1,v[2])))*R2D});
+function eqVec(H,dec,lat){const r=eqToHor(H,dec,lat);return horVec(r.A,r.h);}
+window.CelestialMath={eqToHor,horToEq};
+
+/* ===== สถานะ ===== */
+const S={mode:"hor",lat:16.5,lst:6,ra:5.92,dec:7.41,name:"บีเทลจุส",
+  camAz:205,camEl:24,play:false,speed:1,showVals:true};
+const presets=[["ดาวเหนือ",2.53,89.26],["บีเทลจุส",5.92,7.41],["ซีเรียส",6.75,-16.72],["อะครักซ์ (กางเขนใต้)",12.44,-63.10],
+  ["อาร์คตุรัส",14.26,19.18],["เวกา",18.62,38.78],["ดวงอาทิตย์ (ครีษมายัน)",6.0,23.44]];
+const $=id=>document.getElementById(id);
+const cv=$("cv"),ctx=cv.getContext("2d");
+let W=600,Hc=600,R=250,cx=300,cy=300,dpr=1;
+
+function starHA(){return norm360((S.lst-S.ra)*15);}
+function starHor(){return eqToHor(starHA(),S.dec,S.lat);}
+
+/* ===== กล้อง / ฉาย ===== */
+let cam={};
+function setupCam(){
+  const az=S.camAz*D2R,el=S.camEl*D2R;
+  const c=[Math.cos(el)*Math.sin(az),Math.cos(el)*Math.cos(az),Math.sin(el)];
+  let r=[-c[1],c[0],0]; // up × c, up=(0,0,1) const rl=Math.hypot(r[0],r[1])||1; r=[r[0]/rl,r[1]/rl,0];
+  // ตรวจทิศ: กล้องอยู่ทางใต้ c=(0,-1,0) → r=(1,0,0)=ตะวันออก
+  const u=[c[1]*r[2]-c[2]*r[1], c[2]*r[0]-c[0]*r[2], c[0]*r[1]-c[1]*r[0]];
+  cam={c,r,u};
+}
+const dot=(a,b)=>a[0]*b[0]+a[1]*b[1]+a[2]*b[2];
+function proj(v){return {x:cx+R*dot(v,cam.r),y:cy-R*dot(v,cam.u),d:dot(v,cam.c)};}
+function unproj(sx,sy){
+  let X=(sx-cx)/R,Y=-(sy-cy)/R; const q=X*X+Y*Y; if(q>1){const s=Math.sqrt(q);X/=s;Y/=s;}
+  const Dp=Math.sqrt(Math.max(0,1-X*X-Y*Y));
+  return [0,1,2].map(i=>X*cam.r[i]+Y*cam.u[i]+Dp*cam.c[i]);
+}
+
+/* ===== วาด ===== */
+function curve(pts,color,width,dash,backAlpha=0.28){
+  // pts: array of vectors; draws front solid, back faded dashed
+  ctx.lineWidth=width; ctx.strokeStyle=color;
+  for(const front of [false,true]){
+    ctx.globalAlpha=front?1:backAlpha; ctx.setLineDash(front?(dash||[]):[4,4]);
+    ctx.beginPath(); let pen=false;
+    for(const v of pts){const p=proj(v); const ok=front?p.d>=-0.001:p.d<0.001;
+      if(ok){pen?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y);pen=true;} else pen=false;}
+    ctx.stroke();
+  }
+  ctx.globalAlpha=1; ctx.setLineDash([]);
+}
+function circleHor(fn,n=180){const a=[];for(let i=0;i<=n;i++)a.push(fn(i/n));return a;}
+function label(v,text,color,dx=6,dy=-6,font="13px Tahoma, sans-serif"){
+  const p=proj(v); ctx.globalAlpha=p.d<0?0.45:1; ctx.fillStyle=color; ctx.font=font;
+  ctx.fillText(text,p.x+dx,p.y+dy); ctx.globalAlpha=1; return p;
+}
+function dotAt(v,rad,color){const p=proj(v);ctx.globalAlpha=p.d<0?0.4:1;ctx.fillStyle=color;
+  ctx.beginPath();ctx.arc(p.x,p.y,rad,0,7);ctx.fill();ctx.globalAlpha=1;return p;}
+
+function draw(){
+  setupCam();
+  ctx.setTransform(dpr,0,0,dpr,0,0); ctx.clearRect(0,0,W,Hc);
+  const lat=S.lat, colH=getCSS("--hor"), colE=getCSS("--eq"), colM=getCSS("--mer");
+  // outline of sphere
+  ctx.strokeStyle="#3a4c66";ctx.lineWidth=1;ctx.beginPath();ctx.arc(cx,cy,R,0,7);ctx.stroke();
+  // horizon plane (filled)
+  ctx.fillStyle="rgba(60,110,70,0.22)"; ctx.beginPath();
+  for(let i=0;i<=120;i++){const p=proj(horVec(i*3,0)); i?ctx.lineTo(p.x,p.y):ctx.moveTo(p.x,p.y);} ctx.fill();
+
+  // grids
+  if($("tGrid").checked){
+    if(S.mode==="hor"){
+      for(let h=-60;h<=75;h+=15){ if(h===0)continue; curve(circleHor(t=>horVec(t*360,h)),colH,0.7,null,0.15);}
+      for(let A=0;A<360;A+=30) curve(circleHor(t=>horVec(A,-90+180*t),90),colH,0.7,null,0.15);
+    }else{
+      for(let d=-75;d<=75;d+=15){ if(d===0)continue; curve(circleHor(t=>eqVec(t*360,d,lat)),colE,0.7,null,0.15);}
+      for(let H=0;H<360;H+=30) curve(circleHor(t=>eqVec(H,-90+180*t,lat),90),colE,0.7,null,0.15);
+    }
+  }
+  // horizon circle
+  curve(circleHor(t=>horVec(t*360,0)),"#81c784",2);
+  // celestial equator
+  if($("tEqu").checked) curve(circleHor(t=>eqVec(t*360,0,lat)),colE,1.8);
+  // meridian N-Z-S (upper & lower)
+  if($("tMer").checked){
+    curve(circleHor(t=>{const a=t*Math.PI*2;return [0,Math.cos(a),Math.sin(a)];}),colM,1.8);
+    label([0,Math.cos(2.0),Math.sin(2.0)],"เมริเดียนฟ้า",colM,4,-4,"12px Tahoma, sans-serif");
+  }
+  // earth axis
+  if($("tAxis").checked){
+    const ncp=horVec(0,lat),scp=horVec(180,-lat);
+    const a=proj(ncp),b=proj(scp); ctx.strokeStyle="#bbb";ctx.setLineDash([6,4]);ctx.lineWidth=1.2;
+    ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();ctx.setLineDash([]);
+    // latitude angle at north horizon point: arc from N (h=0) up to NCP along meridian
+    curve(circleHor(t=>horVec(lat>=0?0:180,Math.abs(lat)*t),30),"#ce93d8",3);
+    const m=horVec(lat>=0?0:180,Math.abs(lat)/2);
+    label(m,"มุมเงยขั้วฟ้า = |φ| = "+Math.abs(lat).toFixed(1)+"°","#ce93d8",6,4,"12px Tahoma, sans-serif");
+  }
+  // diurnal path
+  if($("tPath").checked){
+    const pts=circleHor(t=>eqVec(t*360,S.dec,lat));
+    curve(pts,"#fff59d",1.4,[2,3],0.25);
+  }
+  // cardinal points
+  const card=[["N (0°)",0],["E (90°)",90],["S (180°)",180],["W (270°)",270]];
+  for(const [t,A] of card){dotAt(horVec(A,0),3.5,"#81c784");label(horVec(A,0),t,"#c8e6c9",6,14);}
+  // observer at center
+  ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(cx,cy,3,0,7);ctx.fill();
+  // zenith/nadir
+  if($("tZen").checked){
+    dotAt([0,0,1],5,"#fff"); label([0,0,1],"Z จุดเหนือศีรษะ","#fff",8,-4);
+    dotAt([0,0,-1],3,"#999"); label([0,0,-1],"จุดใต้เท้า","#999",8,12,"11px Tahoma, sans-serif");
+    const pz=proj([0,0,1]);ctx.strokeStyle="#ffffff55";ctx.setLineDash([3,3]);ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(pz.x,pz.y);ctx.stroke();ctx.setLineDash([]);
+  }
+  // poles
+  if($("tPole").checked){
+    dotAt(horVec(0,lat),5,"#ce93d8"); label(horVec(0,lat),"ขั้วฟ้าเหนือ NCP","#e1bee7",8,-4);
+    dotAt(horVec(180,-lat),4,"#9575cd"); label(horVec(180,-lat),"ขั้วฟ้าใต้ SCP","#b39ddb",8,12,"12px Tahoma, sans-serif");
+  }
+  // vernal equinox point (H = LST*15)
+  if(S.mode==="eq" && $("tEqu").checked){
+    const vp=eqVec(norm360(S.lst*15),0,lat); dotAt(vp,4,colE); label(vp,"♈ จุดวสันตวิษุวัต",colE,6,30,"12px Tahoma, sans-serif");
+  }
+
+  const sh=starHor(), sv=horVec(sh.A,sh.h);
+  // measurement arcs
+  if($("tArc").checked){
+    if(S.mode==="hor"){
+      // azimuth along horizon from N clockwise to A
+      curve(circleHor(t=>horVec(sh.A*t,0),90),colH,3.5);
+      // altitude along vertical circle
+      curve(circleHor(t=>horVec(sh.A,sh.h*t),60),colH,3.5,[6,3]);
+      const fp=horVec(sh.A,0); const f=proj(fp),s=proj(sv);
+      label(horVec(sh.A*0.6,0),"A = "+sh.A.toFixed(1)+"°",colH,4,16,"bold 13px Tahoma, sans-serif");
+      label(horVec(sh.A,sh.h/2),"h = "+sh.h.toFixed(1)+"°",colH,8,0,"bold 13px Tahoma, sans-serif");
+      ctx.strokeStyle=colH;ctx.globalAlpha=.5;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(f.x,f.y);ctx.stroke();ctx.globalAlpha=1;
+    }else{
+      const H=starHA(), Hs=H>180?H-360:H;
+      // hour angle along equator from meridian (H=0) to star's hour circle
+      curve(circleHor(t=>eqVec(Hs*t,0,lat),90),"#ff8a65",3);
+      // RA along equator from ♈ eastward to star's hour circle: H from LST*15 to H
+      const Hv=norm360(S.lst*15); let span=norm360(Hv-H); // RA*15 = span
+      curve(circleHor(t=>eqVec(Hv-span*t,0,lat),120),colE,3.5);
+      // declination along hour circle
+      curve(circleHor(t=>eqVec(H,S.dec*t,lat),60),colE,3.5,[6,3]);
+      label(eqVec(Hv-span/2,0,lat),"α = "+fmtRA(S.ra),colE,4,16,"bold 13px Tahoma, sans-serif");
+      label(eqVec(H,S.dec/2,lat),"δ = "+fmtSigned(S.dec),colE,8,0,"bold 13px Tahoma, sans-serif");
+      label(eqVec(Hs/2,0,lat),"H",  "#ff8a65",4,-6,"bold 12px Tahoma, sans-serif");
+    }
+  }
+  // star
+  const sp=proj(sv); S._sp=sp;
+  ctx.globalAlpha=sp.d<0?0.5:1;
+  ctx.fillStyle=getCSS("--star"); ctx.font="bold 26px sans-serif"; ctx.textAlign="center"; ctx.textBaseline="middle";
+  ctx.fillText("★",sp.x,sp.y); ctx.textAlign="left";ctx.textBaseline="alphabetic";
+  ctx.font="12px Tahoma, sans-serif"; ctx.fillText(S.name,sp.x+14,sp.y+18); ctx.globalAlpha=1;
+  if(sh.h<0){ctx.fillStyle="#ffab91";ctx.font="12px Tahoma, sans-serif";ctx.fillText("(ใต้ขอบฟ้า)",sp.x+14,sp.y+34);}
+  updatePanel(sh);
+}
+const cssCache={};function getCSS(n){return cssCache[n]||(cssCache[n]=getComputedStyle(document.documentElement).getPropertyValue(n).trim());}
+function fmtRA(h){h=((h%24)+24)%24;let H=Math.floor(h),m=Math.round((h-H)*60);if(m===60){H=(H+1)%24;m=0;}return H+"h "+String(m).padStart(2,"0")+"m";}
+function fmtSigned(x){return (x>=0?"+":"−")+Math.abs(x).toFixed(1)+"°";}
+function dirName(A){const n=["เหนือ","ตะวันออกเฉียงเหนือ","ตะวันออก","ตะวันออกเฉียงใต้","ใต้","ตะวันตกเฉียงใต้","ตะวันตก","ตะวันตกเฉียงเหนือ"];return n[Math.round(A/45)%8];}
+
+function updatePanel(sh){
+  const H=starHA(); const Hh=(H>180?H-360:H)/15;
+  $("vA").textContent=sh.A.toFixed(1)+"° ("+dirName(sh.A)+")";
+  $("vH").textContent=fmtSigned(sh.h);
+  $("vZ").textContent=(90-sh.h).toFixed(1)+"°";
+  $("vRA").textContent=fmtRA(S.ra)+"  ("+(norm360(S.ra*15)).toFixed(1)+"°)";
+  $("vDec").textContent=fmtSigned(S.dec);
+  $("vHA").textContent=(Hh>=0?"+":"−")+Math.abs(Hh).toFixed(2)+" ชม. "+(Math.abs(Hh)<0.01?"(บนเมริเดียน)":Hh>0?"(ทางตะวันตก)":"(ทางตะวันออก)");
+  const lat=S.lat, hmax=90-Math.abs(lat-S.dec), hmin=-90+Math.abs(lat+S.dec);
+  let st;
+  if(hmin>0) st="ดาวรอบขั้วฟ้า: ไม่ตกลับขอบฟ้า";
+  else if(hmax<0) st="ไม่เคยขึ้นพ้นขอบฟ้าที่ละติจูดนี้";
+  else{const c=Math.sin(S.dec*D2R)/Math.cos(lat*D2R); st=Math.abs(c)<=1?("ขึ้นที่ A ≈ "+(Math.acos(c)*R2D).toFixed(1)+"° ตกที่ A ≈ "+(360-Math.acos(c)*R2D).toFixed(1)+"°"):"";}
+  const culmDir = Math.abs(lat-S.dec)<0.05?"ผ่านจุดเหนือศีรษะ":(S.dec>lat?"ทางทิศเหนือ (A = 0°)":"ทางทิศใต้ (A = 180°)");
+  $("status").innerHTML="ผ่านเมริเดียนบน: h<sub>max</sub> = 90° − |φ − δ| = <b>"+hmax.toFixed(1)+"°</b> "+culmDir+"<br>"+st;
+  document.querySelectorAll("#vals td:last-child").forEach(td=>td.style.visibility=S.showVals?"visible":"hidden");
+  $("status").style.visibility=S.showVals?"visible":"hidden";
+  document.querySelectorAll("#vals tr.hor").forEach(r=>r.classList.toggle("dim",S.mode!=="hor"));
+  document.querySelectorAll("#vals tr.eq").forEach(r=>r.classList.toggle("dim",S.mode!=="eq"));
+  $("latV").textContent=Math.abs(lat).toFixed(1)+"°"+(lat>=0?"N":"S");
+  $("lstV").textContent=fmtRA(S.lst);
+  if(document.activeElement.tagName!=="INPUT"){
+    $("iA").value=sh.A.toFixed(1);$("iH").value=sh.h.toFixed(1);$("iRA").value=S.ra.toFixed(2);$("iDec").value=S.dec.toFixed(1);
+  }
+}
+
+/* ===== ตั้งตำแหน่งดาวจากพิกัดขอบฟ้า ===== */
+function setFromHor(A,h){
+  const e=horToEq(A,h,S.lat); S.dec=e.dec; S.ra=((S.lst-e.H/15)%24+24)%24;
+}
+
+/* ===== ขนาด canvas ===== */
+function resize(){
+  dpr=window.devicePixelRatio||1;
+  W=$("stage").clientWidth;
+  // ความสูง: ไม่เกินความกว้าง และไม่เกิน 82% ของจอ (มือถือแนวตั้งได้สี่เหลี่ยมจัตุรัส)
+  Hc=Math.round(Math.min(W, window.innerHeight*0.82));
+  cv.style.height=Hc+"px";
+  cv.width=Math.round(W*dpr); cv.height=Math.round(Hc*dpr);
+  cx=W/2; cy=Hc/2; R=Math.min(W,Hc)*0.40; draw();
+}
+new ResizeObserver(resize).observe($("stage"));
+window.addEventListener("resize",resize);
+
+/* ===== การลาก ===== */
+let drag=null;
+function pos(e){const r=cv.getBoundingClientRect();return {x:e.clientX-r.left,y:e.clientY-r.top};}
+cv.addEventListener("pointerdown",e=>{
+  const p=pos(e); cv.setPointerCapture(e.pointerId);
+  const sp=S._sp, hit=sp && Math.hypot(p.x-sp.x,p.y-sp.y)<(e.pointerType==="touch"?30:20) && sp.d>=-0.05;
+  drag=hit?{t:"star"}:{t:"cam",x:p.x,y:p.y,az:S.camAz,el:S.camEl};
+  cv.style.cursor="grabbing";
+});
+cv.addEventListener("pointermove",e=>{
+  if(!drag)return; const p=pos(e);
+  if(drag.t==="cam"){
+    S.camAz=drag.az-(p.x-drag.x)*0.4; S.camEl=Math.max(-80,Math.min(88,drag.el+(p.y-drag.y)*0.4));
+  }else{
+    const v=unproj(p.x,p.y), hh=vecHor(v);
+    if(S.mode==="hor"){ setFromHor(hh.A,hh.h);
+    }else{ const e2=horToEq(hh.A,hh.h,S.lat); S.dec=e2.dec; S.ra=((S.lst-e2.H/15)%24+24)%24; }
+    S.name="วัตถุ";
+  }
+  draw();
+});
+const end=()=>{drag=null;cv.style.cursor="grab";};
+cv.addEventListener("pointerup",end);cv.addEventListener("pointercancel",end);
+
+/* ===== ปุ่มควบคุม ===== */
+function setMode(m){S.mode=m;$("mHor").classList.toggle("on",m==="hor");$("mEq").classList.toggle("on",m==="eq");
+  $("inHor").classList.toggle("hidden",m!=="hor");$("inEq").classList.toggle("hidden",m!=="eq");draw();}
+$("mHor").onclick=()=>setMode("hor"); $("mEq").onclick=()=>setMode("eq");
+$("lat").oninput=e=>{S.lat=+e.target.value;draw();};
+$("lst").oninput=e=>{S.lst=+e.target.value;draw();};
+document.querySelectorAll("[data-lat]").forEach(b=>b.onclick=()=>{S.lat=+b.dataset.lat;$("lat").value=S.lat;draw();});
+$("hideVals").onclick=()=>{S.showVals=!S.showVals;$("hideVals").textContent=S.showVals?"ซ่อนค่า":"แสดงค่า";draw();};
+$("apply").onclick=()=>{
+  if(S.mode==="hor"){const A=norm360(+$("iA").value||0),h=Math.max(-90,Math.min(90,+$("iH").value||0));setFromHor(A,h);}
+  else{S.ra=((+$("iRA").value||0)%24+24)%24;S.dec=Math.max(-90,Math.min(90,+$("iDec").value||0));}
+  S.name="วัตถุ"; draw();
+};
+const pr=$("presets");
+presets.forEach(([n,ra,dec])=>{const b=document.createElement("button");b.textContent=n;b.onclick=()=>{S.ra=ra;S.dec=dec;S.name=n;draw();};pr.appendChild(b);});
+["tGrid","tMer","tZen","tPole","tEqu","tArc","tPath","tAxis"].forEach(id=>$(id).onchange=draw);
+document.querySelectorAll("[data-view]").forEach(b=>b.onclick=()=>{
+  const v=b.dataset.view; if(v==="std"){S.camAz=205;S.camEl=24;} if(v==="top"){S.camAz=180;S.camEl=88;} if(v==="south"){S.camAz=180;S.camEl=8;} draw();});
+const speeds=[1,3,10];
+$("speed").onclick=()=>{S.speed=speeds[(speeds.indexOf(S.speed)+1)%3];$("speed").textContent="ความเร็ว ×"+S.speed;};
+let last=0;
+function tick(t){
+  if(S.play){const dt=Math.min(0.1,(t-last)/1000); S.lst=(S.lst+dt*0.5*S.speed)%24; $("lst").value=S.lst; draw();}
+  last=t; requestAnimationFrame(tick);
+}
+$("play").onclick=()=>{S.play=!S.play;$("play").textContent=S.play?"⏸ หยุด":"▶ หมุนท้องฟ้า";$("play").classList.toggle("on",S.play);};
+requestAnimationFrame(tick);
+setMode("hor");
+</script>
+</body>
+</html>
