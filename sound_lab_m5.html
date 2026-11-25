@@ -1,0 +1,1436 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ห้องปฏิบัติการเสมือนจริง เรื่อง ปรากฏการณ์เกี่ยวกับเสียง (ฟิสิกส์ ม.5)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Prompt:wght@400;500;600&family=Sarabun:wght@400;500;700&display=swap" rel="stylesheet">
+<script>
+  // ตั้งค่า Tailwind (ใช้เฉพาะงานตกแต่ง — layout หลักเขียนเองด้านล่าง เผื่อ CDN โหลดไม่ขึ้น)
+  window.tailwind = window.tailwind || {};
+  window.tailwind.config = { darkMode: 'class', corePlugins: { preflight: false } };
+</script>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+/* ============ CSS ที่จำเป็นต่อการทำงาน (ไม่พึ่ง Tailwind) ============ */
+:root{
+  --bg:#f8fafc; --card:#ffffff; --card2:#f1f5f9; --text:#0f172a; --muted:#64748b; --border:#e2e8f0;
+  --accent:#4f46e5; --accent-soft:#eef2ff; --accent-text:#ffffff;
+  --disp:#2563eb; --pres:#ea580c; --ok:#0f766e; --bad:#b91c1c; --warn:#b45309;
+  --canvas-bg:#ffffff; --grid:#e2e8f0; --axis:#94a3b8; --wave:#0f172a;
+  --hl1:#d97706; --hl2:#db2777; --hl3:#059669;
+  --font-body:'Sarabun',system-ui,sans-serif; --font-head:'Prompt','Sarabun',system-ui,sans-serif;
+}
+html.dark{
+  --bg:#0b1120; --card:#111827; --card2:#1e293b; --text:#e2e8f0; --muted:#94a3b8; --border:#334155;
+  --accent:#818cf8; --accent-soft:#1e1b4b; --accent-text:#0b1120;
+  --disp:#60a5fa; --pres:#fb923c; --ok:#5eead4; --bad:#fca5a5; --warn:#fcd34d;
+  --canvas-bg:#0f172a; --grid:#1e293b; --axis:#64748b; --wave:#e2e8f0;
+  --hl1:#fbbf24; --hl2:#f472b6; --hl3:#34d399;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font-body);font-size:16px;line-height:1.55;-webkit-text-size-adjust:100%}
+h1,h2,h3,h4{font-family:var(--font-head);margin:0;font-weight:600;line-height:1.3}
+button,input,select{font-family:inherit;font-size:inherit;color:inherit}
+button{cursor:pointer}
+button:disabled{cursor:not-allowed;opacity:.45}
+.hidden{display:none !important}
+
+/* Header */
+.app-header{position:sticky;top:0;z-index:20;background:var(--card);border-bottom:1px solid var(--border);padding:8px 14px}
+.header-row{display:flex;flex-wrap:wrap;align-items:center;gap:10px 16px;max-width:1400px;margin:0 auto}
+.app-title{font-size:1.1rem;color:var(--accent);flex:1 1 280px}
+.sound-box{display:flex;flex-direction:column;gap:2px}
+.sound-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.sound-hint{font-size:.72rem;color:var(--muted);line-height:1.3}
+.btn{min-height:44px;padding:6px 14px;border-radius:10px;border:1px solid var(--border);background:var(--card2);color:var(--text);font-weight:500;white-space:nowrap}
+.btn:hover:not(:disabled){border-color:var(--accent)}
+.btn-primary{background:var(--accent);color:var(--accent-text);border-color:var(--accent)}
+.btn-on{background:var(--accent);color:var(--accent-text);border-color:var(--accent)}
+.btn-sm{min-height:44px;min-width:44px;padding:4px 8px;font-size:.9rem}
+.vol-wrap{display:flex;align-items:center;gap:6px;font-size:.9rem}
+.vol-wrap input{width:120px}
+
+/* Tabs */
+.tabbar{display:flex;gap:6px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:10px 14px 0;max-width:1400px;margin:0 auto;scrollbar-width:thin}
+.tab-btn{flex:0 0 auto;min-height:44px;padding:8px 16px;border-radius:10px 10px 0 0;border:1px solid var(--border);border-bottom:none;background:var(--card2);color:var(--muted);font-family:var(--font-head);font-weight:500}
+.tab-btn.active{background:var(--card);color:var(--accent);border-color:var(--accent);box-shadow:inset 0 3px 0 var(--accent)}
+main{max-width:1400px;margin:0 auto;padding:0 14px 40px}
+.tab-panel{display:none;gap:14px;border-top:1px solid var(--border);padding-top:14px}
+.tab-panel.active{display:grid;grid-template-columns:1fr}
+@media (min-width:1024px){ .tab-panel.active{grid-template-columns:minmax(0,2fr) minmax(0,1fr);align-items:start} .mission-col{position:sticky;top:120px;max-height:calc(100vh - 130px);overflow:auto} }
+
+.card{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px}
+.card h3{font-size:1rem;margin-bottom:8px}
+.sim-col{display:flex;flex-direction:column;gap:12px;min-width:0}
+.canvas-wrap{position:relative;width:100%;background:var(--canvas-bg);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.canvas-wrap canvas{display:block;width:100%;height:100%;touch-action:none}
+.ar-t1{aspect-ratio:16/10} .ar-t2{aspect-ratio:16/7} .ar-t2g{aspect-ratio:16/4.2} .ar-t3{aspect-ratio:16/10} .ar-t4{aspect-ratio:2/1} .ar-t4g{aspect-ratio:16/4.5}
+@media (max-width:640px){ .ar-t1{aspect-ratio:4/4.6} .ar-t2{aspect-ratio:16/9} .ar-t2g{aspect-ratio:16/6} .ar-t3{aspect-ratio:4/4} .ar-t4{aspect-ratio:4/2.6} .ar-t4g{aspect-ratio:16/7} }
+.slow-badge{display:inline-block;margin-top:6px;background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent);font-size:.78rem;font-weight:500;padding:3px 10px;border-radius:999px;line-height:1.35}
+.slow-badge::before{content:'🐢 '}
+.canvas-toolbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.seg{display:inline-flex;border:1px solid var(--border);border-radius:10px;overflow:hidden;flex-wrap:wrap}
+.seg button{min-height:44px;padding:6px 12px;border:none;background:var(--card2);color:var(--text);border-right:1px solid var(--border)}
+.seg button:last-child{border-right:none}
+.seg button.on{background:var(--accent);color:var(--accent-text)}
+
+/* Controls */
+.controls{display:grid;grid-template-columns:1fr;gap:10px 18px}
+@media (min-width:700px){ .controls{grid-template-columns:1fr 1fr} }
+.ctl{display:flex;flex-direction:column;gap:2px}
+.ctl-head{display:flex;justify-content:space-between;gap:8px;font-size:.92rem}
+.ctl-val{font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums}
+.ctl-row{display:flex;align-items:center;gap:6px}
+.ctl-row input[type=range]{flex:1;min-width:0}
+.ctl-note{font-size:.75rem;color:var(--muted)}
+input[type=range]{-webkit-appearance:none;appearance:none;height:44px;background:transparent;margin:0}
+input[type=range]::-webkit-slider-runnable-track{height:6px;border-radius:3px;background:var(--border)}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:24px;height:24px;border-radius:50%;background:var(--accent);margin-top:-9px;border:2px solid var(--card)}
+input[type=range]::-moz-range-track{height:6px;border-radius:3px;background:var(--border)}
+input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:var(--accent);border:2px solid var(--card)}
+.toggle{display:flex;align-items:center;gap:8px;min-height:44px;font-size:.92rem;cursor:pointer;user-select:none}
+.toggle input{width:22px;height:22px;accent-color:var(--accent)}
+
+/* Results */
+.results{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:8px}
+.res{background:var(--card2);border-radius:10px;padding:8px 10px}
+.res .k{font-size:.78rem;color:var(--muted)}
+.res .v{font-size:1.05rem;font-weight:700;font-variant-numeric:tabular-nums}
+.formula{font-family:'Cambria Math',Cambria,'Times New Roman',serif;font-size:1.05rem;background:var(--accent-soft);border-radius:10px;padding:8px 12px;margin-bottom:8px;overflow-x:auto}
+.formula .hl{background:var(--accent);color:var(--accent-text);border-radius:4px;padding:0 4px}
+.note{font-size:.8rem;color:var(--muted)}
+.resbanner{padding:8px 12px;border-radius:10px;font-weight:700;text-align:center;font-family:var(--font-head)}
+.resbanner.on{background:#fde68a;color:#78350f}
+html.dark .resbanner.on{background:#78350f;color:#fde68a}
+.meter{height:18px;border-radius:9px;background:var(--card2);border:1px solid var(--border);overflow:hidden}
+.meter > div{height:100%;background:var(--accent);width:0}
+
+/* Data table */
+.tbl-wrap{overflow-x:auto}
+table.data{border-collapse:collapse;width:100%;font-size:.88rem;font-variant-numeric:tabular-nums}
+table.data th,table.data td{border:1px solid var(--border);padding:5px 8px;text-align:center;white-space:nowrap}
+table.data th{background:var(--card2)}
+
+/* Mission (POE) */
+.mission h2{font-size:1.05rem;color:var(--accent);margin-bottom:6px}
+.mission .obj{font-size:.9rem;background:var(--accent-soft);border-radius:10px;padding:8px 12px;margin:0 0 10px}
+.mission .obj ol{margin:4px 0 0;padding-left:20px}
+.mstep{display:flex;gap:10px;align-items:flex-start;padding:6px 0;border-bottom:1px dashed var(--border)}
+.mstep input{width:24px;height:24px;flex:0 0 auto;margin-top:2px;accent-color:var(--accent)}
+.mstep label{display:flex;gap:10px;align-items:flex-start;cursor:pointer;min-height:44px}
+.mstep.done span{color:var(--muted);text-decoration:line-through}
+.q{border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin:10px 0;background:var(--card2)}
+.q .qt{font-weight:600;margin-bottom:6px}
+.q .tag{display:inline-block;font-size:.72rem;background:var(--accent);color:var(--accent-text);padding:1px 8px;border-radius:999px;margin-right:6px;vertical-align:middle}
+.opt{display:flex;gap:8px;align-items:flex-start;padding:6px 8px;border-radius:8px;cursor:pointer;min-height:44px}
+.opt:hover{background:var(--card)}
+.opt input{width:20px;height:20px;flex:0 0 auto;margin-top:3px;accent-color:var(--accent)}
+.opt.correct{outline:2px solid var(--ok)}
+.opt.wrong{outline:2px dashed var(--bad)}
+.verdict{margin-top:8px;padding:8px 10px;border-radius:8px;font-size:.92rem;background:var(--card)}
+.verdict b.ok{color:var(--ok)} .verdict b.bad{color:var(--bad)}
+
+/* Legend markers */
+.legend{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:.8rem;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:4px}
+.mk{display:inline-flex;width:18px;height:18px;align-items:center;justify-content:center;font-size:.6rem;font-weight:700}
+.mk.dn{border:2px solid var(--disp);border-radius:50%;color:var(--disp)}
+.mk.da{background:var(--disp);border-radius:50%;color:#fff}
+.mk.pn{border:2px solid var(--pres);color:var(--pres)}
+.mk.pa{background:var(--pres);color:#fff}
+
+.tapbtn{width:100%;min-height:90px;font-size:1.2rem;font-family:var(--font-head);border-radius:14px;border:2px solid var(--accent);background:var(--accent-soft);color:var(--accent);touch-action:manipulation}
+.tapbtn:active:not(:disabled){transform:scale(.98)}
+.lamp{width:46px;height:46px;border-radius:50%;border:2px solid var(--border);flex:0 0 auto}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.footer{max-width:1400px;margin:0 auto;padding:10px 14px 30px;font-size:.78rem;color:var(--muted)}
+</style>
+</head>
+<body>
+<header class="app-header">
+  <div class="header-row">
+    <h1 class="app-title">ห้องปฏิบัติการเสมือนจริง เรื่อง ปรากฏการณ์เกี่ยวกับเสียง (ฟิสิกส์ ม.5)</h1>
+    <div class="sound-box">
+      <div class="sound-controls">
+        <button id="btnSound" class="btn btn-primary" aria-pressed="false">🔊 เปิดเสียง</button>
+        <label class="vol-wrap" for="vol">ความดังรวม
+          <input id="vol" type="range" min="0" max="100" step="1" value="25" aria-label="ความดังรวม">
+          <span id="volVal" class="ctl-val">25%</span>
+        </label>
+        <button id="btnTheme" class="btn" aria-label="สลับโหมดมืด">🌙 โหมดมืด</button>
+      </div>
+      <div class="sound-hint">iPhone/iPad: ปิดสวิตช์โหมดเงียบก่อน · ลำโพงมือถืออาจเล่นความถี่ต่ำกว่า ~200 Hz ได้เบา ควรใช้หูฟัง</div>
+    </div>
+  </div>
+</header>
+
+<nav class="tabbar" role="tablist" aria-label="เลือกการทดลอง">
+  <button class="tab-btn active" role="tab" data-tab="t1">① คลื่นนิ่ง</button>
+  <button class="tab-btn" role="tab" data-tab="t2">② การสั่นพ้องในท่อ</button>
+  <button class="tab-btn" role="tab" data-tab="t3">③ บีต</button>
+  <button class="tab-btn" role="tab" data-tab="t4">④ ดอปเพลอร์</button>
+</nav>
+
+<main>
+<!-- ===================== แท็บ 1 ===================== -->
+<section id="t1" class="tab-panel active" role="tabpanel">
+  <div class="sim-col">
+    <div class="card shadow-sm">
+      <h3>คลื่นนิ่งของเสียงในท่อ (L = 0.50 m, v = 343 m/s)</h3>
+      <div class="canvas-wrap ar-t1"><canvas id="c1"></canvas></div><div class="slow-badge">ภาพแสดงแบบช้า — เสียงที่ได้ยินเป็นความถี่จริง</div>
+      <div class="canvas-toolbar" style="margin-top:8px">
+        <button id="t1Pause" class="btn">⏸ หยุดภาพ</button>
+        <div class="seg" id="t1GraphMode">
+          <button data-v="s" class="on">กราฟการกระจัด s</button><button data-v="p">กราฟความดัน p</button><button data-v="both">ซ้อนทั้งสอง</button>
+        </div>
+      </div>
+      <div class="legend" style="margin-top:6px">
+        <span><i class="mk dn">N</i>บัพการกระจัด</span><span><i class="mk da">A</i>ปฏิบัพการกระจัด</span>
+        <span><i class="mk pn">N</i>บัพความดัน</span><span><i class="mk pa">A</i>ปฏิบัพความดัน</span>
+        <span>โมเลกุลที่ติดตาม: <b style="color:var(--hl1)">●</b> ที่บัพ <b style="color:var(--hl2)">●</b> ที่ปฏิบัพ <b style="color:var(--hl3)">●</b> กึ่งกลาง (ขีดเล็กใต้ตัว = ตำแหน่งสมดุล)</span>
+      </div>
+    </div>
+    <div class="card shadow-sm">
+      <h3>ตัวควบคุม</h3>
+      <div class="ctl" style="margin-bottom:8px"><div class="ctl-head"><span>ชนิดท่อ</span></div>
+        <div class="seg" id="t1Pipe"><button data-v="cc" class="on">ปิด–ปิด</button><button data-v="oo">เปิด–เปิด</button><button data-v="co">ปิด(ซ้าย)–เปิด(ขวา)</button></div>
+      </div>
+      <div class="controls" id="t1Controls"></div>
+      <div class="row" style="margin-top:6px">
+        <label class="toggle"><input type="checkbox" id="t1ShowDisp" checked> แสดง N/A ของการกระจัด</label>
+        <label class="toggle"><input type="checkbox" id="t1ShowPres"> แสดง N/A ของความดัน</label>
+      </div>
+    </div>
+    <div class="card shadow-sm">
+      <h3>สูตรและผลการคำนวณ</h3>
+      <div class="formula" id="t1Formula"></div>
+      <div class="results" id="t1Results"></div>
+      <p class="note">ความดันส่วนเปลี่ยนแปลงคำนวณจาก p(x,t) = −B ∂s/∂x · ไม่คิดการแก้ปลาย (ปลายเปิดเป็นบัพความดันพอดี)</p>
+    </div>
+  </div>
+  <aside class="mission-col"><div class="card mission shadow-sm" id="m1"></div></aside>
+</section>
+
+<!-- ===================== แท็บ 2 ===================== -->
+<section id="t2" class="tab-panel" role="tabpanel">
+  <div class="sim-col">
+    <div class="card shadow-sm">
+      <h3>การสั่นพ้องของอากาศในท่อ</h3>
+      <div class="canvas-wrap ar-t2"><canvas id="c2"></canvas></div><div class="slow-badge">ภาพแสดงแบบช้า (โมเลกุลสั่น 0.5 รอบ/วินาที) — เสียงที่ได้ยินเป็นความถี่จริง</div>
+      <div class="row" style="margin-top:8px">
+        <button id="t2Pause" class="btn">⏸ หยุดภาพ</button>
+        <div id="t2Banner" class="resbanner" style="flex:1;min-width:200px">&nbsp;</div>
+      </div>
+      <div style="margin-top:8px"><div class="ctl-head"><span>ความแรงของการสั่นพ้อง A<sub>res</sub></span><span id="t2MeterVal" class="ctl-val">0.00</span></div>
+        <div class="meter"><div id="t2Meter"></div></div></div>
+      <p class="note" style="margin:6px 0 0">ลากลูกสูบ (ท่อปลายปิด) ด้วยเมาส์หรือนิ้วได้ · เส้นโค้งในท่อคือขอบเขต (envelope) ของการกระจัด คูณด้วย A<sub>res</sub></p>
+      <div class="canvas-wrap ar-t2g" style="margin-top:8px"><canvas id="c2g"></canvas></div>
+    </div>
+    <div class="card shadow-sm">
+      <h3>ตัวควบคุม</h3>
+      <div class="ctl" style="margin-bottom:8px"><div class="ctl-head"><span>ชนิดท่อ</span></div>
+        <div class="seg" id="t2Pipe"><button data-v="closed" class="on">ปลายปิด 1 ด้าน</button><button data-v="open">ปลายเปิด 2 ด้าน</button></div>
+      </div>
+      <div class="controls" id="t2Controls"></div>
+      <label class="toggle"><input type="checkbox" id="t2EndCorr"> คิดการแก้ปลาย (รัศมีท่อ r = 0.02 m)</label>
+    </div>
+    <div class="card shadow-sm">
+      <h3>สูตรและผลการคำนวณ</h3>
+      <div class="formula" id="t2Formula"></div>
+      <div class="results" id="t2Results"></div>
+      <div style="margin-top:10px"><b>ความถี่ธรรมชาติ 5 ค่าแรกของท่อ (ณ L, T ปัจจุบัน)</b><div id="t2Modes" class="tbl-wrap" style="margin-top:4px"></div></div>
+      <div style="margin-top:10px">
+        <button id="t2ShowLn" class="btn">แสดงคำตอบ: ความยาวท่อที่สั่นพ้องที่ f นี้</button>
+        <div id="t2Ln" class="hidden tbl-wrap" style="margin-top:6px"></div>
+      </div>
+    </div>
+    <div class="card shadow-sm">
+      <h3>ตารางบันทึกผล</h3>
+      <div class="row" style="margin-bottom:8px">
+        <button id="t2Record" class="btn btn-primary">📌 บันทึกค่า</button>
+        <button id="t2Copy" class="btn">คัดลอกตาราง</button>
+        <button id="t2Clear" class="btn">ล้างตาราง</button>
+        <span id="t2CopyMsg" class="note"></span>
+      </div>
+      <div class="tbl-wrap"><table class="data" id="t2Table"><thead><tr><th>ครั้งที่</th><th>ชนิดท่อ</th><th>T (°C)</th><th>f (Hz)</th><th>L (m)</th><th>A<sub>res</sub></th></tr></thead><tbody></tbody></table></div>
+      <div id="t2Derived" style="margin-top:8px"></div>
+    </div>
+  </div>
+  <aside class="mission-col"><div class="card mission shadow-sm" id="m2"></div></aside>
+</section>
+
+<!-- ===================== แท็บ 3 ===================== -->
+<section id="t3" class="tab-panel" role="tabpanel">
+  <div class="sim-col">
+    <div class="card shadow-sm">
+      <h3>บีตของเสียง</h3>
+      <div class="canvas-wrap ar-t3"><canvas id="c3"></canvas></div><div class="slow-badge" id="t3Badge">ภาพแสดงแบบช้า</div>
+      <div class="row" style="margin-top:8px">
+        <button id="t3Pause" class="btn">⏸ หยุดภาพ</button>
+        <div class="row"><div class="lamp" id="t3Lamp" aria-label="ไฟความดัง"></div><span class="note">ไฟความดัง (สว่างตาม envelope ขณะนั้น)</span></div>
+      </div>
+    </div>
+    <div class="card shadow-sm">
+      <h3>ตัวควบคุม</h3>
+      <div class="controls" id="t3Controls"></div>
+      <div class="row" style="margin-top:6px">
+        <label class="toggle"><input type="checkbox" id="t3Src1" checked> เปิดแหล่ง 1</label>
+        <label class="toggle"><input type="checkbox" id="t3Src2" checked> เปิดแหล่ง 2</label>
+        <button id="t3Sync" class="btn">↺ เริ่มเฟสพร้อมกัน</button>
+      </div>
+      <p class="note" style="margin:4px 0 0">ปุ่ม "เริ่มเฟสพร้อมกัน" เริ่มคลื่นทั้งสองใหม่ที่เฟสเดียวกัน (ใช้เมื่อ f₁ = f₂ แล้วเสียงค่อยผิดปกติ เพราะผลต่างเฟสค้างอยู่)</p>
+    </div>
+    <div class="card shadow-sm">
+      <h3>สูตรและผลการคำนวณ</h3>
+      <div class="formula">y = A₁ sin(2πf₁t) + A₂ sin(2πf₂t) · f<sub>B</sub> = |f₁ − f₂| · T<sub>B</sub> = 1/f<sub>B</sub> · f<sub>avg</sub> = (f₁ + f₂)/2</div>
+      <div class="results" id="t3Results"></div>
+    </div>
+    <div class="card shadow-sm">
+      <h3>เครื่องมือนับบีต</h3>
+      <div class="row" style="margin-bottom:8px">
+        <button id="t3TimerBtn" class="btn btn-primary">เริ่มจับเวลา 10 s</button>
+        <span id="t3TimerTxt" class="ctl-val">พร้อม</span>
+      </div>
+      <button id="t3Tap" class="tapbtn" disabled>แตะทุกครั้งที่ได้ยินเสียงดัง</button>
+      <div id="t3CountRes" class="results" style="margin-top:8px"></div>
+    </div>
+  </div>
+  <aside class="mission-col"><div class="card mission shadow-sm" id="m3"></div></aside>
+</section>
+
+<!-- ===================== แท็บ 4 ===================== -->
+<section id="t4" class="tab-panel" role="tabpanel">
+  <div class="sim-col">
+    <div class="card shadow-sm">
+      <h3>ปรากฏการณ์ดอปเพลอร์ (มุมมองจากด้านบน)</h3>
+      <div class="canvas-wrap ar-t4"><canvas id="c4"></canvas></div><div class="slow-badge" id="t4Badge">ภาพแสดงแบบช้า</div>
+      <div class="row" style="margin-top:8px">
+        <button id="t4Play" class="btn btn-primary">▶ เริ่มวิ่งผ่าน</button>
+        <button id="t4Reset" class="btn">⟲ รีเซ็ต</button>
+        <button id="t4Pause" class="btn">⏸ หยุดภาพ</button>
+        <label class="toggle"><input type="checkbox" id="t4Loop"> วนซ้ำ</label>
+      </div>
+      <div class="canvas-wrap ar-t4g" style="margin-top:8px"><canvas id="c4g"></canvas></div>
+      <p class="note" style="margin:6px 0 0">กราฟ f<sub>o</sub>–t: เส้นประแนวนอน = f<sub>s</sub> · เส้นแนวตั้ง = ขณะที่แหล่งกำเนิดอยู่ใกล้ผู้สังเกตที่สุด · เส้นประจากแหล่งกำเนิดถึงผู้สังเกต = ตำแหน่งที่ปล่อยเสียงที่ได้ยินขณะนี้</p>
+    </div>
+    <div class="card shadow-sm">
+      <h3>ตัวควบคุม</h3>
+      <div class="controls" id="t4Controls"></div>
+    </div>
+    <div class="card shadow-sm">
+      <h3>สูตรและผลการคำนวณ</h3>
+      <div class="formula" id="t4Formula"></div>
+      <div class="results" id="t4Results"></div>
+      <p class="note">ค่าที่เล่นและแสดงคำนวณจาก f<sub>o</sub> = f<sub>s</sub>·|(v − û·v⃗<sub>o</sub>)/(v − û·v⃗<sub>s</sub>)| โดยคิดเวลาหน่วงของการแผ่คลื่น (û ชี้จากตำแหน่งที่ปล่อยเสียงไปยังผู้สังเกต) · λ ในอากาศไม่ขึ้นกับ v<sub>o</sub></p>
+    </div>
+  </div>
+  <aside class="mission-col"><div class="card mission shadow-sm" id="m4"></div></aside>
+</section>
+</main>
+<div class="footer">ใช้ HTML5 Canvas + Web Audio API · ภาพบางส่วนย่อสเกลเวลาเพื่อไม่ให้เกิด aliasing (มีป้ายกำกับทุกจุด) · ข้อมูลภารกิจเก็บในเบราว์เซอร์เครื่องนี้</div>
+<script>
+'use strict';
+/* =====================================================================
+   ส่วนกลาง: ยูทิลิตี, ธีม, Canvas, AudioEngine, TabController, Slider, POE
+   ===================================================================== */
+const $ = (id) => document.getElementById(id);
+const TAU = Math.PI * 2;
+const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+const fx = (x, d) => (Number.isFinite(x) ? x.toFixed(d) : '—');
+const snap = (x, step, min) => { const k = Math.round((x - min) / step); return +(min + k * step).toFixed(6); };
+
+// ---------- localStorage (ครอบ try/catch) ----------
+const Store = {
+  get(key, def) { try { const s = localStorage.getItem('soundlab2:' + key); return s ? JSON.parse(s) : def; } catch (e) { return def; } },
+  set(key, val) { try { localStorage.setItem('soundlab2:' + key, JSON.stringify(val)); } catch (e) { /* ignore */ } }
+};
+
+// ---------- สีจาก CSS variables ----------
+const COL = {};
+function refreshColors() {
+  const cs = getComputedStyle(document.documentElement);
+  ['--text','--muted','--border','--accent','--disp','--pres','--canvas-bg','--grid','--axis','--wave','--hl1','--hl2','--hl3','--card2','--accent-soft','--warn','--ok','--bad']
+    .forEach(n => { COL[n.slice(2)] = cs.getPropertyValue(n).trim(); });
+}
+function hexA(hex, a) { // แปลง #rrggbb → rgba
+  const h = hex.replace('#', '');
+  if (h.length !== 6) return hex;
+  return `rgba(${parseInt(h.slice(0,2),16)},${parseInt(h.slice(2,4),16)},${parseInt(h.slice(4,6),16)},${a})`;
+}
+
+// ---------- Canvas ที่รองรับ devicePixelRatio + ResizeObserver ----------
+function setupCanvas(cv) {
+  const st = { cv, ctx: cv.getContext('2d'), w: 0, h: 0 };
+  const resize = () => {
+    const r = cv.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    if (r.width < 1 || r.height < 1) { st.w = 0; st.h = 0; return; }
+    cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr);
+    st.w = r.width; st.h = r.height;
+    st.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  };
+  if ('ResizeObserver' in window) new ResizeObserver(resize).observe(cv);
+  else window.addEventListener('resize', resize);
+  resize();
+  st.resize = resize;
+  return st;
+}
+function clearCanvas(st) { const c = st.ctx; c.fillStyle = COL['canvas-bg']; c.fillRect(0, 0, st.w, st.h); }
+function txt(c, s, x, y, opt = {}) {
+  c.font = `${opt.bold ? '600 ' : ''}${opt.size || 12}px Sarabun, system-ui, sans-serif`;
+  c.fillStyle = opt.color || COL.text; c.textAlign = opt.align || 'left'; c.textBaseline = opt.base || 'middle';
+  c.fillText(s, x, y);
+}
+// วาดเครื่องหมาย N/A: kind = 'disp' (วงกลม) | 'pres' (สี่เหลี่ยม), filled = ปฏิบัพ
+function drawMarker(c, x, y, kind, filled) {
+  const col = kind === 'disp' ? COL.disp : COL.pres, r = 8;
+  c.lineWidth = 2; c.strokeStyle = col; c.fillStyle = col;
+  c.beginPath();
+  if (kind === 'disp') c.arc(x, y, r, 0, TAU); else c.rect(x - r, y - r, 2 * r, 2 * r);
+  if (filled) c.fill(); else { c.fillStyle = COL['canvas-bg']; c.fill(); c.stroke(); }
+  txt(c, filled ? 'A' : 'N', x, y + 0.5, { size: 10, bold: true, align: 'center', color: filled ? '#ffffff' : col });
+}
+
+// ---------- Audio Engine กลาง ----------
+const AudioEngine = {
+  ctx: null, master: null, comp: null, enabled: false, volume: 0.25,
+  ensure() {
+    if (this.ctx) return this.ctx;
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) { document.querySelector('.sound-hint').textContent = 'เบราว์เซอร์นี้ไม่รองรับ Web Audio API — ใช้ได้เฉพาะภาพจำลอง'; return null; }
+    const ctx = new AC();
+    this.ctx = ctx;
+    // limiter: threshold −12 dB, ratio 12 (ตั้งค่าก่อนมีเสียงเล่น)
+    this.comp = ctx.createDynamicsCompressor();
+    this.comp.threshold.value = -12; this.comp.ratio.value = 12; this.comp.knee.value = 0;
+    this.comp.attack.value = 0.003; this.comp.release.value = 0.25;
+    this.master = ctx.createGain(); this.master.gain.value = 0;
+    this.master.connect(this.comp); this.comp.connect(ctx.destination);
+    return ctx;
+  },
+  get running() { return this.enabled && !!this.ctx && this.ctx.state === 'running'; },
+  now() { return this.ctx ? this.ctx.currentTime : 0; },
+  // เวลาที่ "ได้ยิน" จริง = เวลาที่ประมวลผล − latency ของการส่งออก
+  heardTime() { const c = this.ctx; return c.currentTime - (c.outputLatency || c.baseLatency || 0); },
+  ramp(param, value, tc = 0.02) { if (this.ctx) param.setTargetAtTime(value, this.ctx.currentTime, tc); },
+  async enable() {
+    if (!this.ensure()) return;
+    try { await this.ctx.resume(); } catch (e) { /* ignore */ }
+    this.enabled = true;
+    this.ramp(this.master.gain, this.volume);
+    TabController.current.start();
+  },
+  disable() {
+    this.enabled = false;
+    if (this.ctx) this.ramp(this.master.gain, 0);
+    TabController.current.stop();
+  },
+  setVolume(v) { this.volume = v; if (this.enabled && this.ctx) this.ramp(this.master.gain, v); },
+  makeTabGain(level = 1) {
+    const g = this.ctx.createGain();
+    g.gain.setValueAtTime(0, this.ctx.currentTime);
+    g.gain.setTargetAtTime(level, this.ctx.currentTime, 0.02);
+    g.connect(this.master);
+    return g;
+  },
+  makeOsc(freq, dest, gain0 = 0, t0) {
+    const ctx = this.ctx, o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(freq, ctx.currentTime);
+    g.gain.setValueAtTime(0, ctx.currentTime);
+    g.gain.setTargetAtTime(gain0, ctx.currentTime, 0.02);
+    o.connect(g); g.connect(dest);
+    o.start(t0 !== undefined ? t0 : ctx.currentTime);
+    return { o, g };
+  },
+  // ramp gain → 0 ภายใน 0.05 s แล้ว stop() + disconnect
+  fadeOutAndStop(tabGain, sources) {
+    if (!this.ctx || !tabGain) return;
+    const t = this.ctx.currentTime, gp = tabGain.gain;
+    gp.cancelScheduledValues(t); gp.setValueAtTime(gp.value, t); gp.linearRampToValueAtTime(0, t + 0.05);
+    sources.forEach(s => { try { s.stop(t + 0.06); } catch (e) { /* already stopped */ } });
+    setTimeout(() => {
+      sources.forEach(s => { try { s.disconnect(); } catch (e) {} });
+      try { tabGain.disconnect(); } catch (e) {}
+    }, 120);
+  }
+};
+
+// ---------- ตัวควบคุมแท็บกลาง ----------
+const TabController = {
+  tabs: {}, currentId: 't1',
+  register(id, obj) { this.tabs[id] = obj; },
+  get current() { return this.tabs[this.currentId]; },
+  switchTo(id) {
+    if (id === this.currentId || !this.tabs[id]) return;
+    this.current.stop();                         // หยุดเสียงแท็บเดิม
+    $(this.currentId).classList.remove('active');
+    document.querySelector(`.tab-btn[data-tab="${this.currentId}"]`).classList.remove('active');
+    this.currentId = id;
+    $(id).classList.add('active');
+    document.querySelector(`.tab-btn[data-tab="${id}"]`).classList.add('active');
+    Store.set('tab', id);
+    if (this.current.onShow) this.current.onShow();
+    if (AudioEngine.enabled) this.current.start();
+  }
+};
+
+// ---------- Slider ที่ใช้ร่วมกัน (label + ค่า + หน่วย + ปุ่ม ±) ----------
+function makeSlider(parent, o) {
+  const wrap = document.createElement('div'); wrap.className = 'ctl';
+  const dec = o.dec !== undefined ? o.dec : 0;
+  wrap.innerHTML = `<div class="ctl-head"><label for="${o.id}">${o.label}</label><span class="ctl-val" id="${o.id}Val"></span></div>
+    <div class="ctl-row">${o.pm ? `<button class="btn btn-sm" data-d="-1" aria-label="ลดค่า">−${o.pmLabel || ''}</button>` : ''}
+    <input type="range" id="${o.id}" min="${o.min}" max="${o.max}" step="${o.step}" value="${o.value}">
+    ${o.pm ? `<button class="btn btn-sm" data-d="1" aria-label="เพิ่มค่า">+${o.pmLabel || ''}</button>` : ''}</div>
+    ${o.note ? `<div class="ctl-note">${o.note}</div>` : ''}`;
+  parent.appendChild(wrap);
+  const input = wrap.querySelector('input'), val = wrap.querySelector('.ctl-val');
+  const api = {
+    input, wrap,
+    get value() { return snap(parseFloat(input.value), o.step, o.min); },
+    show() { const v = api.value; val.textContent = o.fmt ? o.fmt(v) : `${v.toFixed(dec)}${o.unit ? ' ' + o.unit : ''}`; },
+    set(v, fire = true) { input.value = clamp(snap(v, o.step, o.min), o.min, o.max); api.show(); if (fire && o.onInput) o.onInput(api.value); },
+    setRange(min, max) { o.min = min; o.max = max; input.min = min; input.max = max; }
+  };
+  input.addEventListener('input', () => { api.show(); if (o.onInput) o.onInput(api.value); });
+  wrap.querySelectorAll('button[data-d]').forEach(b => b.addEventListener('click', () => api.set(api.value + (+b.dataset.d) * (o.pm || o.step))));
+  api.show();
+  return api;
+}
+// ปุ่มแบบเลือกหนึ่งตัว
+function makeSeg(el, onChange) {
+  const btns = [...el.querySelectorAll('button')];
+  const api = {
+    value: (btns.find(b => b.classList.contains('on')) || btns[0]).dataset.v,
+    set(v, fire = true) { api.value = v; btns.forEach(b => b.classList.toggle('on', b.dataset.v === v)); if (fire) onChange(v); }
+  };
+  btns.forEach(b => b.addEventListener('click', () => api.set(b.dataset.v)));
+  return api;
+}
+function setPauseBtn(btn, paused) { btn.textContent = paused ? '▶ เล่นต่อ' : '⏸ หยุดภาพ'; }
+function setResults(el, items) {
+  el.innerHTML = items.map(([k, v]) => `<div class="res"><div class="k">${k}</div><div class="v">${v}</div></div>`).join('');
+}
+
+// ---------- กล่องภารกิจ POE สร้างจากข้อมูล JSON ----------
+function buildMission(container, data, key) {
+  const state = Store.get('mission:' + key, { steps: {}, ans: {}, shown: {} });
+  const save = () => Store.set('mission:' + key, state);
+  let stepNo = 0, html = `<h2>🔬 ภารกิจการทดลอง (Predict–Observe–Explain)</h2>
+    <div class="obj"><b>จุดประสงค์การเรียนรู้</b><ol>${data.objectives.map(o => `<li>${o}</li>`).join('')}</ol></div>`;
+  data.items.forEach(it => {
+    if (it.type === 'step') {
+      stepNo++;
+      const done = !!state.steps[stepNo];
+      html += `<div class="mstep${done ? ' done' : ''}" data-step="${stepNo}"><label><input type="checkbox" ${done ? 'checked' : ''} aria-label="ทำขั้นตอนที่ ${stepNo} เสร็จแล้ว"><span><b>ขั้นตอนที่ ${stepNo}</b> ${it.text}</span></label></div>`;
+    } else {
+      html += `<div class="q" data-q="${it.id}"><div class="qt"><span class="tag">${it.id}${it.tag ? ' · ' + it.tag : ''}</span>${it.text}</div>
+        ${it.options.map(op => `<label class="opt" data-k="${op.k}"><input type="radio" name="${key}-${it.id}" value="${op.k}"><span>${op.k}) ${op.t}</span></label>`).join('')}
+        <div class="row" style="margin-top:6px"><button class="btn btn-sm" data-act="reveal" disabled>ดูเฉลย</button><span class="note">ต้องเลือกคำทำนายก่อน</span></div>
+        <div class="verdict hidden"></div></div>`;
+    }
+  });
+  html += `<div style="margin-top:12px"><button class="btn btn-sm" data-act="reset">ล้างคำตอบและเครื่องหมายในแท็บนี้</button></div>`;
+  container.innerHTML = html;
+
+  container.querySelectorAll('.mstep').forEach(div => {
+    const n = div.dataset.step, cb = div.querySelector('input');
+    cb.addEventListener('change', () => { state.steps[n] = cb.checked; div.classList.toggle('done', cb.checked); save(); });
+  });
+  const render = (qid) => {
+    const it = data.items.find(x => x.id === qid), q = container.querySelector(`.q[data-q="${qid}"]`);
+    const chosen = state.ans[qid], shown = !!state.shown[qid];
+    q.querySelectorAll('input').forEach(r => { r.checked = r.value === chosen; r.disabled = shown; });
+    q.querySelector('[data-act="reveal"]').disabled = !chosen || shown;
+    q.querySelectorAll('.opt').forEach(op => {
+      op.classList.toggle('correct', shown && op.dataset.k === it.answer);
+      op.classList.toggle('wrong', shown && op.dataset.k === chosen && chosen !== it.answer);
+    });
+    const v = q.querySelector('.verdict');
+    if (shown) {
+      const ok = chosen === it.answer, ansOpt = it.options.find(o => o.k === it.answer);
+      v.innerHTML = `${ok ? '<b class="ok">✔ ทำนายถูก</b>' : `<b class="bad">✘ ทำนายยังไม่ถูก</b>`} — เฉลย <b>${it.answer})</b> ${it.explain ? it.explain : ansOpt.t}`;
+      v.classList.remove('hidden');
+    } else v.classList.add('hidden');
+  };
+  data.items.filter(x => x.type === 'q').forEach(it => {
+    const q = container.querySelector(`.q[data-q="${it.id}"]`);
+    q.querySelectorAll('input').forEach(r => r.addEventListener('change', () => { state.ans[it.id] = r.value; save(); render(it.id); }));
+    q.querySelector('[data-act="reveal"]').addEventListener('click', () => { if (!state.ans[it.id]) return; state.shown[it.id] = true; save(); render(it.id); });
+    render(it.id);
+  });
+  container.querySelector('[data-act="reset"]').addEventListener('click', () => {
+    state.steps = {}; state.ans = {}; state.shown = {}; save(); buildMission(container, data, key);
+  });
+}
+
+/* =====================================================================
+   แท็บ 1: คลื่นนิ่งของเสียง
+   ===================================================================== */
+const Tab1 = {
+  L: 0.50, v: 343, pipe: 'cc', modeIdx: 0, amp: 0.6, speed: 0.5, graph: 's', showD: true, showP: false,
+  phase: 0, paused: false, nodes: null, mol: [],
+  modes() { return this.pipe === 'co' ? [1, 3, 5, 7] : [1, 2, 3, 4, 5]; },
+  get n() { return this.modes()[this.modeIdx]; },
+  // ปิด–ปิด/เปิด–เปิด: L = nλ/2 → λ = 2L/n ; ปิด–เปิด: L = nλ/4 → λ = 4L/n (n คี่)
+  lambda() { return this.pipe === 'co' ? 4 * this.L / this.n : 2 * this.L / this.n; },
+  freq() { return this.v / this.lambda(); },                 // fₙ = v/λₙ
+  k() { return TAU / this.lambda(); },
+  // รูปร่างเชิงพื้นที่ของการกระจัด s(x) (ปลายปิดที่ x=0 → sin, ปลายเปิดทั้งสองด้าน → cos)
+  sShape(x) { return this.pipe === 'oo' ? Math.cos(this.k() * x) : Math.sin(this.k() * x); },
+  // ความดัน p = −B ∂s/∂x (หารด้วย BAk ให้เป็นค่าไร้หน่วยช่วง ±1)
+  pShape(x) { return this.pipe === 'oo' ? Math.sin(this.k() * x) : -Math.cos(this.k() * x); },
+  // ตำแหน่งบัพ/ปฏิบัพของการกระจัด (บัพความดัน = ปฏิบัพการกระจัด, ปฏิบัพความดัน = บัพการกระจัด)
+  dispPoints() {
+    const lam = this.lambda(), L = this.L, N = [], A = [], eps = 1e-9;
+    const off = this.pipe === 'oo' ? lam / 4 : 0;           // sin: บัพที่ mλ/2 ; cos: บัพที่ λ/4 + mλ/2
+    for (let m = 0; off + m * lam / 2 <= L + eps; m++) N.push(off + m * lam / 2);
+    const offA = this.pipe === 'oo' ? 0 : lam / 4;
+    for (let m = 0; offA + m * lam / 2 <= L + eps; m++) A.push(offA + m * lam / 2);
+    return { N, A };
+  },
+  init() {
+    const box = $('t1Controls');
+    this.sMode = makeSlider(box, { id: 't1Mode', label: 'โหมด n (ฮาร์มอนิกที่ n)', min: 0, max: 4, step: 1, value: 0, pm: 1,
+      fmt: (i) => `n = ${this.modes()[i]} → f = ${fx(this.v / (this.pipe === 'co' ? 4 * this.L / this.modes()[i] : 2 * this.L / this.modes()[i]), 1)} Hz`,
+      note: 'เลื่อนได้เฉพาะความถี่ที่ทำให้เกิดคลื่นนิ่ง', onInput: (v) => this.update({ modeIdx: v }) });
+    this.sAmp = makeSlider(box, { id: 't1Amp', label: 'แอมพลิจูดในภาพ (ปรับความดังตาม)', min: 0.2, max: 1, step: 0.05, value: this.amp, dec: 2, pm: 0.05, onInput: (v) => this.update({ amp: v }) });
+    this.sSpd = makeSlider(box, { id: 't1Spd', label: 'ความเร็วภาพ', min: 0.2, max: 2, step: 0.1, value: this.speed, dec: 1, unit: 'รอบ/วินาที (ของภาพ)', pm: 0.1, onInput: (v) => this.update({ speed: v }) });
+    this.segPipe = makeSeg($('t1Pipe'), (v) => this.update({ pipe: v }));
+    this.segGraph = makeSeg($('t1GraphMode'), (v) => this.update({ graph: v }));
+    $('t1ShowDisp').addEventListener('change', (e) => this.update({ showD: e.target.checked }));
+    $('t1ShowPres').addEventListener('change', (e) => this.update({ showP: e.target.checked }));
+    $('t1Pause').addEventListener('click', () => { this.paused = !this.paused; setPauseBtn($('t1Pause'), this.paused); });
+    // โมเลกุล 40 คอลัมน์ × 6 แถว (สุ่มเลื่อนแนวตั้งเล็กน้อยด้วย seed คงที่)
+    let seed = 12345; const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    for (let i = 0; i < 40; i++) for (let j = 0; j < 6; j++) this.mol.push({ x: i / 39, row: j, jit: (rnd() - 0.5) * 0.5 });
+    this.cv = setupCanvas($('c1'));
+    this.update({});
+  },
+  update(p) {
+    Object.assign(this, p);
+    if (p.pipe !== undefined) {
+      this.sMode.setRange(0, this.modes().length - 1);
+      this.modeIdx = clamp(this.modeIdx, 0, this.modes().length - 1);
+      this.sMode.set(this.modeIdx, false);
+    }
+    this.sMode.show();
+    const f = this.freq(), lam = this.lambda(), pts = this.dispPoints();
+    const form = { cc: 's(x,t) = A sin(kx) cos(ωt) · L = nλ/2 → λₙ = 2L/n',
+                   oo: 's(x,t) = A cos(kx) cos(ωt) · L = nλ/2 → λₙ = 2L/n',
+                   co: 's(x,t) = A sin(kx) cos(ωt) · L = nλ/4 (n คี่) → λₙ = 4L/n' }[this.pipe];
+    $('t1Formula').innerHTML = `${form} · fₙ = v/λₙ · p(x,t) = −B ∂s/∂x`;
+    setResults($('t1Results'), [
+      ['อัตราเร็วเสียง v', '343 m/s'],
+      ['ความยาวคลื่น λₙ', `${fx(lam, 3)} m`],
+      [`ความถี่ fₙ (n = ${this.n})`, `${fx(f, 1)} Hz`],
+      ['จำนวนบัพการกระจัด', `${pts.N.length} ตำแหน่ง`],
+      ['ระยะบัพ–บัพ = λ/2', `${fx(lam / 2, 3)} m`],
+      ['ระยะบัพการกระจัด–บัพความดัน = λ/4', `${fx(lam / 4, 3)} m`]
+    ]);
+    if (this.nodes) {
+      AudioEngine.ramp(this.nodes.o.frequency, f);
+      AudioEngine.ramp(this.nodes.g.gain, 0.5 * this.amp);
+    }
+  },
+  start() {
+    if (this.nodes || !AudioEngine.running) return;
+    this.tabGain = AudioEngine.makeTabGain(1);
+    this.nodes = AudioEngine.makeOsc(this.freq(), this.tabGain, 0.5 * this.amp);
+  },
+  stop() {
+    if (!this.nodes) return;
+    AudioEngine.fadeOutAndStop(this.tabGain, [this.nodes.o]);
+    this.nodes = null; this.tabGain = null;
+  },
+  draw(dt) {
+    const st = this.cv; if (!st.w) return;
+    if (!this.paused) this.phase = (this.phase + TAU * this.speed * dt) % TAU;
+    const c = st.ctx, W = st.w, H = st.h;
+    clearCanvas(st);
+    const x0 = 44, x1 = W - 22, tw = x1 - x0, X = (x) => x0 + (x / this.L) * tw;
+    const lamPx = (this.lambda() / this.L) * tw;
+    const cosw = Math.cos(this.phase);
+    // ---- แผงบน: โมเลกุลอากาศ ----
+    const pTop = 26, pBot = H * 0.46, pMid = (pTop + pBot) / 2;
+    // แถบความดัน: อัด = เข้ม, ขยาย = จาง
+    const strips = 120;
+    for (let i = 0; i < strips; i++) {
+      const xm = (i + 0.5) / strips * this.L, pv = this.pShape(xm) * cosw * this.amp;
+      c.fillStyle = hexA(COL.accent, clamp(0.22 + 0.2 * pv, 0.02, 0.5));
+      c.fillRect(X(i / strips * this.L), pTop, tw / strips + 0.6, pBot - pTop);
+    }
+    // ผนังท่อ
+    c.strokeStyle = COL.axis; c.lineWidth = 2;
+    c.beginPath(); c.moveTo(x0, pTop); c.lineTo(x1, pTop); c.moveTo(x0, pBot); c.lineTo(x1, pBot); c.stroke();
+    const closedL = this.pipe !== 'oo', closedR = this.pipe === 'cc';
+    c.fillStyle = COL.text;
+    if (closedL) c.fillRect(x0 - 10, pTop - 4, 10, pBot - pTop + 8);
+    if (closedR) c.fillRect(x1, pTop - 4, 10, pBot - pTop + 8);
+    txt(c, closedL ? 'ปลายปิด' : 'ปลายเปิด', x0, 12, { size: 11, color: COL.muted, align: 'left' });
+    txt(c, closedR ? 'ปลายปิด' : 'ปลายเปิด', x1, 12, { size: 11, color: COL.muted, align: 'right' });
+    // ขนาดการกระจัดบนจอ (จำกัดไม่ให้โมเลกุลข้างเคียงสลับลำดับกัน)
+    const Dpx = this.amp * Math.min(0.7 * lamPx / TAU, 0.08 * tw);
+    const rowsY = [0, 1, 2, 3, 4, 5].map(j => { const f = (j + 0.5) / 6; return pTop + 8 + f * (pBot - pTop - 16) + (j >= 3 ? 6 : -6); });
+    const rowGap = (pBot - pTop) / 7;
+    c.fillStyle = COL.wave;
+    this.mol.forEach(m => {
+      const xm = m.x * this.L, s = this.sShape(xm) * cosw;
+      const px = X(xm) + s * Dpx, py = rowsY[m.row] + m.jit * rowGap * 0.5;
+      c.beginPath(); c.arc(px, py, 2.4, 0, TAU); c.fill();
+    });
+    // โมเลกุลที่ติดตาม 3 ตัว: ที่บัพ, ที่ปฏิบัพ, ที่กึ่งกลางระหว่างบัพกับปฏิบัพ (ใกล้กลางท่อที่สุด)
+    const pts = this.dispPoints(), mid = this.L / 2;
+    const near = (arr) => arr.reduce((a, b) => Math.abs(b - mid) < Math.abs(a - mid) ? b : a);
+    const xN = near(pts.N), xA = near(pts.A), xM = (xN + xA) / 2;
+    [[xN, COL.hl1, 'ที่บัพ'], [xA, COL.hl2, 'ที่ปฏิบัพ'], [xM, COL.hl3, 'กึ่งกลาง']].forEach(([xe, col, lab]) => {
+      const px = X(xe) + this.sShape(xe) * cosw * Dpx;
+      c.strokeStyle = col; c.lineWidth = 2;
+      c.beginPath(); c.moveTo(X(xe), pMid + 9); c.lineTo(X(xe), pMid + 15); c.stroke();
+      c.fillStyle = col; c.beginPath(); c.arc(px, pMid, 5.5, 0, TAU); c.fill();
+      c.strokeStyle = COL['canvas-bg']; c.lineWidth = 1.5; c.stroke();
+    });
+    // ---- แผงล่าง: กราฟ ----
+    const gTop = pBot + 30, gBot = H - 26, gMid = (gTop + gBot) / 2, gA = (gBot - gTop) / 2 - 26;
+    c.strokeStyle = COL.grid; c.lineWidth = 1;
+    c.beginPath(); c.moveTo(x0, gMid); c.lineTo(x1, gMid); c.stroke();
+    c.strokeStyle = COL.axis; c.beginPath(); c.moveTo(x0, gTop + 18); c.lineTo(x0, gBot - 18); c.stroke();
+    // แกน x (เมตร)
+    for (let i = 0; i <= 5; i++) {
+      const xx = X(i * 0.1);
+      c.strokeStyle = COL.axis; c.beginPath(); c.moveTo(xx, gBot - 18); c.lineTo(xx, gBot - 13); c.stroke();
+      txt(c, i === 5 ? '0.5 m' : (i * 0.1).toFixed(1), i === 5 ? xx + 4 : xx, gBot - 5, { size: 10, color: COL.muted, align: i === 5 ? 'right' : 'center' });
+    }
+    const curves = [];
+    const narrow = W < 600, gapL = narrow ? 135 : 230;
+    if (this.graph !== 'p') curves.push({ f: (x) => this.sShape(x), col: COL.disp, lab: narrow ? 'การกระจัด s (ขวา = +)' : 'การกระจัด s (ไปทางขวา = +)' });
+    if (this.graph !== 's') curves.push({ f: (x) => this.pShape(x), col: COL.pres, lab: narrow ? 'ความดัน p' : 'ความดันเทียบความดันบรรยากาศ p' });
+    curves.forEach((cv, idx) => {
+      const amp = gA * this.amp;
+      // envelope ±A (เส้นประจาง)
+      c.setLineDash([4, 4]); c.strokeStyle = hexA(cv.col, 0.45); c.lineWidth = 1.2;
+      [1, -1].forEach(sg => { c.beginPath(); for (let i = 0; i <= 200; i++) { const x = i / 200 * this.L; const y = gMid - sg * Math.abs(cv.f(x)) * amp; i ? c.lineTo(X(x), y) : c.moveTo(X(x), y); } c.stroke(); });
+      c.setLineDash([]);
+      // ค่าขณะนั้น (เส้นทึบ)
+      c.strokeStyle = cv.col; c.lineWidth = 2.4;
+      c.beginPath(); for (let i = 0; i <= 300; i++) { const x = i / 300 * this.L; const y = gMid - cv.f(x) * cosw * amp; i ? c.lineTo(X(x), y) : c.moveTo(X(x), y); } c.stroke();
+      c.fillStyle = cv.col; c.fillRect(x0 + 6 + idx * gapL, gTop - 13, 16, 3);
+      txt(c, cv.lab, x0 + 26 + idx * gapL, gTop - 11, { size: 11, color: cv.col, bold: true });
+    });
+    txt(c, '+', x0 - 12, gTop + 22, { size: 12, color: COL.muted, align: 'center' });
+    txt(c, '0', x0 - 12, gMid, { size: 11, color: COL.muted, align: 'center' });
+    txt(c, '−', x0 - 12, gBot - 22, { size: 12, color: COL.muted, align: 'center' });
+    // ---- เส้นประแนวตั้งเชื่อม N/A ทั้งสองภาพ + เครื่องหมาย ----
+    const yD = gTop + 8, yP = gBot - 30;
+    const drawSet = (list, kind, filled, dash) => list.forEach(x => {
+      c.setLineDash(dash); c.strokeStyle = hexA(kind === 'disp' ? COL.disp : COL.pres, 0.7); c.lineWidth = 1.2;
+      c.beginPath(); c.moveTo(X(x), pTop); c.lineTo(X(x), gBot - 18); c.stroke(); c.setLineDash([]);
+      drawMarker(c, X(x), kind === 'disp' ? yD : yP, kind, filled);
+    });
+    if (this.showD) { drawSet(pts.N, 'disp', false, [5, 4]); drawSet(pts.A, 'disp', true, [5, 4]); }
+    if (this.showP) { drawSet(pts.A, 'pres', false, [2, 4]); drawSet(pts.N, 'pres', true, [2, 4]); }
+  }
+};
+TabController.register('t1', Tab1);
+
+const MISSION1 = {
+  objectives: ['แยกตำแหน่งบัพ/ปฏิบัพของการกระจัดกับของความดันได้', 'อธิบายได้ว่าเหตุใดคลื่นนิ่งในท่อเกิดเฉพาะบางความถี่'],
+  items: [
+    { type: 'step', text: 'เลือกท่อปิด–เปิด n = 1 สังเกตโมเลกุลที่ติดผนังปลายปิด และโมเลกุลที่ปลายเปิด ว่าตัวไหนสั่นมากที่สุด' },
+    { type: 'q', id: 'Q1', tag: 'ถามก่อนขั้นตอนที่ 2', text: 'ที่ผนังปลายปิดของท่อ ความดันอากาศเปลี่ยนแปลงอย่างไร',
+      options: [{ k: 'ก', t: 'ไม่เปลี่ยนเลย เพราะโมเลกุลไม่ขยับ' }, { k: 'ข', t: 'เปลี่ยนมากที่สุด' }, { k: 'ค', t: 'เปลี่ยนเท่ากับที่ปลายเปิด' }],
+      answer: 'ข', explain: 'โมเลกุลที่ติดผนังขยับไม่ได้ (บัพการกระจัด) แต่โมเลกุลข้างเคียงวิ่งเข้าหาผนังและถอยออกสลับกัน อากาศตรงผนังจึงถูกอัดและขยายมากที่สุด จุดนี้จึงเป็นปฏิบัพความดัน "โมเลกุลไม่ขยับ" ไม่ได้แปลว่า "ความดันไม่เปลี่ยน"' },
+    { type: 'step', text: 'สลับกราฟเป็น "ซ้อนทั้งสอง" แล้วเปิด N/A ทั้งสองชุด เทียบตำแหน่ง' },
+    { type: 'step', text: 'สังเกตบริเวณที่แถบสีเข้ม-จางสลับกันแรงที่สุด แล้วเทียบกับกราฟความดัน' },
+    { type: 'step', text: 'เพิ่ม n เป็น 3 และ 5 นับจำนวนบัพการกระจัด แล้วตรวจว่า λ = v/f' },
+    { type: 'q', id: 'Q2', text: 'บัพการกระจัดกับบัพความดันที่อยู่ใกล้กันที่สุดห่างกันเท่าใด',
+      options: [{ k: 'ก', t: '0 (ตำแหน่งเดียวกัน)' }, { k: 'ข', t: 'λ/4' }, { k: 'ค', t: 'λ/2' }],
+      answer: 'ข', explain: 'เพราะ p ∝ −∂s/∂x กราฟความดันจึงเลื่อนจากกราฟการกระจัดไป λ/4 ในเชิงพื้นที่' },
+    { type: 'q', id: 'Q3', text: 'ท่อปิด–เปิด เหตุใดเลือกโหมด n = 2 ไม่ได้',
+      options: [{ k: 'ก', t: 'ลำโพงเล่นความถี่นั้นไม่ได้' }, { k: 'ข', t: 'ปลายปิดต้องเป็นบัพการกระจัดและปลายเปิดต้องเป็นปฏิบัพ จึงได้ L = (2n−1)λ/4 มีแต่ฮาร์มอนิกคี่' }, { k: 'ค', t: 'ความถี่นั้นต่ำเกินไป' }],
+      answer: 'ข' }
+  ]
+};
+
+/* =====================================================================
+   แท็บ 2: การสั่นพ้องของอากาศในท่อ
+   ===================================================================== */
+const Tab2 = {
+  pipe: 'closed', L: 0.100, f: 500, T: 25, ec: false, r: 0.02, Q: 20,
+  phase: 0, paused: false, nodes: null, rows: [], dragging: false,
+  vSound() { return 331 + 0.6 * this.T; },                    // v = 331 + 0.6T
+  endCorr() { return this.ec ? (this.pipe === 'closed' ? 0.6 * this.r : 1.2 * this.r) : 0; },
+  Leff(L = this.L) { return L + this.endCorr(); },
+  // ความถี่ธรรมชาติ: ปลายปิด fₙ = n·v/(4L_eff) (n คี่) ; ปลายเปิด fₙ = n·v/(2L_eff)
+  fn(n, L = this.L) { const v = this.vSound(); return this.pipe === 'closed' ? n * v / (4 * this.Leff(L)) : n * v / (2 * this.Leff(L)); },
+  // ความแรงของการสั่นพ้อง A_res = 1/√(1 + Q²(f/fₙ − fₙ/f)²) โดยใช้โหมดที่ใกล้ f ที่สุด
+  resonance(L = this.L) {
+    const v = this.vSound(), f = this.f, Le = this.Leff(L);
+    let cands;
+    if (this.pipe === 'closed') { const n0 = 2 * Math.round((f * 4 * Le / v - 1) / 2) + 1; cands = [n0 - 2, n0, n0 + 2].filter(n => n >= 1); }
+    else { const n0 = Math.round(f * 2 * Le / v); cands = [n0 - 1, n0, n0 + 1].filter(n => n >= 1); }
+    let best = { A: -1, n: 1 };
+    cands.forEach(n => { const fnv = this.fn(n, L), q = this.Q * (f / fnv - fnv / f), A = 1 / Math.sqrt(1 + q * q); if (A > best.A) best = { A, n, fn: fnv }; });
+    return best;
+  },
+  harmonicLabel(n) {
+    const m = this.pipe === 'closed' ? (n - 1) / 2 : n - 1;
+    return `ฮาร์มอนิกที่ ${n} (${m === 0 ? 'ความถี่มูลฐาน' : 'โอเวอร์โทนที่ ' + m})`;
+  },
+  init() {
+    const box = $('t2Controls');
+    this.sL = makeSlider(box, { id: 't2L', label: 'ความยาวท่อ L', min: 0.1, max: 1.5, step: 0.005, value: this.L, dec: 3, unit: 'm', pm: 0.005, onInput: (v) => this.update({ L: v }) });
+    this.sF = makeSlider(box, { id: 't2F', label: 'ความถี่ลำโพง f', min: 100, max: 1000, step: 1, value: this.f, dec: 0, unit: 'Hz', pm: 1, onInput: (v) => this.update({ f: v }) });
+    this.sT = makeSlider(box, { id: 't2T', label: 'อุณหภูมิอากาศ T', min: 0, max: 40, step: 1, value: this.T, dec: 0, unit: '°C', pm: 1, onInput: (v) => this.update({ T: v }) });
+    this.segPipe = makeSeg($('t2Pipe'), (v) => this.update({ pipe: v }));
+    $('t2EndCorr').addEventListener('change', (e) => this.update({ ec: e.target.checked }));
+    $('t2Pause').addEventListener('click', () => { this.paused = !this.paused; setPauseBtn($('t2Pause'), this.paused); });
+    $('t2ShowLn').addEventListener('click', () => {
+      const el = $('t2Ln'), show = el.classList.contains('hidden');
+      el.classList.toggle('hidden', !show);
+      $('t2ShowLn').textContent = show ? 'ซ่อนคำตอบ' : 'แสดงคำตอบ: ความยาวท่อที่สั่นพ้องที่ f นี้';
+    });
+    $('t2Record').addEventListener('click', () => this.record());
+    $('t2Clear').addEventListener('click', () => {
+      // ยืนยันด้วยการกดซ้ำ (ไม่ใช้ confirm() เพราะบางเบราว์เซอร์/กรอบหน้าเว็บบล็อกไว้)
+      const b = $('t2Clear');
+      if (this.rows.length && !this._clearArmed) { this._clearArmed = true; b.textContent = 'กดอีกครั้งเพื่อยืนยันการล้าง'; setTimeout(() => { this._clearArmed = false; b.textContent = 'ล้างตาราง'; }, 3000); return; }
+      this._clearArmed = false; b.textContent = 'ล้างตาราง'; this.rows = []; this.saveRows(); this.renderTable();
+    });
+    $('t2Copy').addEventListener('click', () => this.copyTSV());
+    this.rows = Store.get('t2rows', []);
+    this.cv = setupCanvas($('c2')); this.cg = setupCanvas($('c2g'));
+    // ลากลูกสูบด้วย Pointer Events (เมาส์และนิ้ว)
+    const cv = $('c2');
+    const toL = (e) => { const r = cv.getBoundingClientRect(); const g = this.geom(); return snap(clamp(((e.clientX - r.left) - g.xs) / g.sc, 0.1, 1.5), 0.005, 0.1); };
+    cv.addEventListener('pointerdown', (e) => {
+      if (this.pipe !== 'closed') return;
+      const r = cv.getBoundingClientRect(), g = this.geom(), px = e.clientX - r.left;
+      if (Math.abs(px - (g.xs + this.L * g.sc)) < 40 || px > g.xs) { this.dragging = true; cv.setPointerCapture(e.pointerId); this.sL.set(toL(e)); e.preventDefault(); }
+    });
+    cv.addEventListener('pointermove', (e) => { if (this.dragging) { this.sL.set(toL(e)); } else if (this.pipe === 'closed') { const r = cv.getBoundingClientRect(), g = this.geom(); cv.style.cursor = Math.abs(e.clientX - r.left - (g.xs + this.L * g.sc)) < 40 ? 'ew-resize' : 'default'; } });
+    const end = (e) => { if (this.dragging) { this.dragging = false; try { cv.releasePointerCapture(e.pointerId); } catch (er) {} } };
+    cv.addEventListener('pointerup', end); cv.addEventListener('pointercancel', end);
+    this.renderTable();
+    this.update({});
+  },
+  geom() { const W = this.cv.w; const xs = 58; return { xs, sc: (W - xs - 46) / 1.5 }; },
+  update(p) {
+    Object.assign(this, p);
+    const v = this.vSound(), lam = v / this.f, res = this.resonance();
+    this.res = res;
+    $('t2Formula').innerHTML = this.pipe === 'closed'
+      ? 'v = 331 + 0.6T · λ = v/f · ปลายปิด 1 ด้าน: fₙ = n·v/(4L<sub>eff</sub>), n = 1, 3, 5, … · A<sub>res</sub> = 1/√(1 + Q²(f/fₙ − fₙ/f)²), Q = 20'
+      : 'v = 331 + 0.6T · λ = v/f · ปลายเปิด 2 ด้าน: fₙ = n·v/(2L<sub>eff</sub>), n = 1, 2, 3, … · A<sub>res</sub> = 1/√(1 + Q²(f/fₙ − fₙ/f)²), Q = 20';
+    setResults($('t2Results'), [
+      ['อัตราเร็วเสียง v', `${fx(v, 1)} m/s`],
+      ['ความยาวคลื่น λ = v/f', `${fx(lam, 3)} m`],
+      ['ความแรงการสั่นพ้อง A<sub>res</sub>', `${fx(res.A, 3)}`],
+      ['โหมดที่ใกล้ f ที่สุด', `n = ${res.n} (fₙ = ${fx(res.fn, 1)} Hz)`],
+      ['L<sub>eff</sub>', `${fx(this.Leff(), 3)} m${this.ec ? ` (แก้ปลาย +${fx(this.endCorr(), 3)} m)` : ''}`]
+    ]);
+    // ความถี่ธรรมชาติ 5 ค่าแรก
+    const ns = this.pipe === 'closed' ? [1, 3, 5, 7, 9] : [1, 2, 3, 4, 5];
+    $('t2Modes').innerHTML = `<table class="data"><tr><th>n</th><th>ลำดับ</th><th>fₙ (Hz)</th></tr>${ns.map(n => `<tr><td>${n}</td><td>${this.harmonicLabel(n)}</td><td>${fx(this.fn(n), 1)}</td></tr>`).join('')}</table>`;
+    // ความยาวที่สั่นพ้องที่ f ปัจจุบัน (หักค่าแก้ปลายออก)
+    const list = [];
+    for (let n = 1; n < 40; n++) {
+      const Ln = (this.pipe === 'closed' ? (2 * n - 1) * lam / 4 : n * lam / 2) - this.endCorr();
+      if (Ln > 1.5) break;
+      list.push([n, Ln]);
+    }
+    $('t2Ln').innerHTML = `<table class="data"><tr><th>ลำดับ</th><th>${this.pipe === 'closed' ? 'Lₙ = (2n−1)λ/4' : 'Lₙ = nλ/2'}${this.ec ? ' − ค่าแก้ปลาย' : ''}</th><th>หมายเหตุ</th></tr>${list.map(([n, Ln]) => `<tr><td>${n}</td><td>${fx(Ln, 3)} m</td><td>${Ln < 0.1 ? 'สั้นกว่าช่วงที่ปรับได้' : ''}</td></tr>`).join('')}</table>`;
+    const on = res.A > 0.9;
+    $('t2Banner').className = 'resbanner' + (on ? ' on' : '');
+    $('t2Banner').innerHTML = on ? `สั่นพ้อง! ${this.harmonicLabel(res.n)}` : 'ยังไม่สั่นพ้อง — ค่อย ๆ ปรับ L หรือ f';
+    $('t2Meter').style.width = (res.A * 100).toFixed(1) + '%';
+    $('t2MeterVal').textContent = fx(res.A, 3);
+    if (this.nodes) {
+      AudioEngine.ramp(this.nodes.o.frequency, this.f);
+      AudioEngine.ramp(this.nodes.g.gain, 0.15 + 0.85 * res.A);   // gain = 0.15 + 0.85·A_res
+    }
+  },
+  start() {
+    if (this.nodes || !AudioEngine.running) return;
+    this.tabGain = AudioEngine.makeTabGain(1);
+    this.nodes = AudioEngine.makeOsc(this.f, this.tabGain, 0.15 + 0.85 * this.res.A);
+  },
+  stop() {
+    if (!this.nodes) return;
+    AudioEngine.fadeOutAndStop(this.tabGain, [this.nodes.o]);
+    this.nodes = null; this.tabGain = null;
+  },
+  record() {
+    this.rows.push({ pipe: this.pipe, ec: this.ec, T: this.T, f: this.f, L: this.L, A: this.res.A });
+    this.saveRows(); this.renderTable();
+  },
+  saveRows() { Store.set('t2rows', this.rows); },
+  pipeName(r) { return (r.pipe === 'closed' ? 'ปลายปิด' : 'ปลายเปิด') + (r.ec ? ' (แก้ปลาย)' : ''); },
+  derived() {
+    // ถ้ามีแถวปลายปิดที่ f, T (และสถานะการแก้ปลาย) เดียวกัน ≥ 2 แถว → λ = 2(L₂ − L₁)
+    const groups = {};
+    this.rows.forEach(r => { if (r.pipe !== 'closed') return; const k = `${r.T}|${r.f}|${r.ec}`; (groups[k] = groups[k] || []).push(r); });
+    const out = [];
+    Object.values(groups).forEach(g => {
+      const Ls = [...new Set(g.map(r => r.L))].sort((a, b) => a - b);
+      if (Ls.length < 2) return;
+      const r0 = g[0], L1 = Ls[0], L2 = Ls[1], lam = 2 * (L2 - L1), vexp = r0.f * lam, vth = 331 + 0.6 * r0.T;
+      out.push({ T: r0.T, f: r0.f, ec: r0.ec, L1, L2, lam, vexp, vth, err: Math.abs(vexp - vth) / vth * 100, more: Ls.length > 2 });
+    });
+    return out;
+  },
+  renderTable() {
+    const tb = $('t2Table').querySelector('tbody');
+    tb.innerHTML = this.rows.map((r, i) => `<tr><td>${i + 1}</td><td>${this.pipeName(r)}</td><td>${r.T}</td><td>${r.f}</td><td>${fx(r.L, 3)}</td><td>${fx(r.A, 3)}</td></tr>`).join('')
+      || '<tr><td colspan="6" class="note">ยังไม่มีข้อมูล — กด "📌 บันทึกค่า"</td></tr>';
+    const d = this.derived();
+    $('t2Derived').innerHTML = d.length ? d.map(x => `<div class="res" style="margin-bottom:6px"><div class="k">ท่อปลายปิด${x.ec ? ' (แก้ปลาย)' : ''} · T = ${x.T} °C · f = ${x.f} Hz · L₁ = ${fx(x.L1, 3)} m, L₂ = ${fx(x.L2, 3)} m${x.more ? ' (ใช้ 2 ค่าที่น้อยที่สุด)' : ''}</div>
+      <div class="v">λ = 2(L₂ − L₁) = ${fx(x.lam, 3)} m · v<sub>ทดลอง</sub> = fλ = ${fx(x.vexp, 1)} m/s · v<sub>ทฤษฎี</sub> = 331 + 0.6T = ${fx(x.vth, 1)} m/s · คลาดเคลื่อน ${fx(x.err, 2)} %</div></div>`).join('')
+      : '<p class="note">บันทึกแถวท่อปลายปิดที่ f และ T เดียวกันอย่างน้อย 2 แถว (L₁ และ L₂) เพื่อคำนวณ v<sub>ทดลอง</sub> อัตโนมัติ</p>';
+  },
+  copyTSV() {
+    const lines = ['ครั้งที่\tชนิดท่อ\tT (°C)\tf (Hz)\tL (m)\tA_res'];
+    this.rows.forEach((r, i) => lines.push([i + 1, this.pipeName(r), r.T, r.f, r.L.toFixed(3), r.A.toFixed(3)].join('\t')));
+    const d = this.derived();
+    if (d.length) { lines.push(''); lines.push('ชนิดท่อ\tT (°C)\tf (Hz)\tL1 (m)\tL2 (m)\tλ (m)\tv_ทดลอง (m/s)\tv_ทฤษฎี (m/s)\t%คลาดเคลื่อน');
+      d.forEach(x => lines.push([x.ec ? 'ปลายปิด (แก้ปลาย)' : 'ปลายปิด', x.T, x.f, x.L1.toFixed(3), x.L2.toFixed(3), x.lam.toFixed(3), x.vexp.toFixed(1), x.vth.toFixed(1), x.err.toFixed(2)].join('\t'))); }
+    const text = lines.join('\n'), msg = $('t2CopyMsg');
+    const done = () => { msg.textContent = 'คัดลอกแล้ว — วางใน Excel ได้ทันที'; setTimeout(() => msg.textContent = '', 2500); };
+    const fallback = () => { const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); done(); } catch (e) { msg.textContent = 'คัดลอกไม่สำเร็จ'; } ta.remove(); };
+    if (navigator.clipboard && window.isSecureContext) navigator.clipboard.writeText(text).then(done, fallback); else fallback();
+  },
+  draw(dt) {
+    if (!this.paused) this.phase = (this.phase + TAU * 0.5 * dt) % TAU;   // ภาพช้า 0.5 รอบ/วินาที
+    this.drawTube(); this.drawGraph();
+  },
+  drawTube() {
+    const st = this.cv; if (!st.w) return;
+    const c = st.ctx, W = st.w, H = st.h; clearCanvas(st);
+    const { xs, sc } = this.geom(), xe = xs + this.L * sc, yc = H / 2, th = H * 0.3;
+    const v = this.vSound(), k = TAU * this.f / v, A = this.res.A, closed = this.pipe === 'closed', c0 = this.ec ? 0.6 * this.r : 0;
+    // รูปร่างการกระจัด: ปลายปิดอ้างอิงจากลูกสูบ (บัพที่ลูกสูบ) ; ปลายเปิดอ้างอิงปฏิบัพที่ปลายซ้าย (เลื่อนออกนอกท่อตามค่าแก้ปลาย)
+    const shape = (x) => closed ? Math.sin(k * (this.L - x)) : Math.cos(k * (x + c0));
+    // ลำโพง
+    c.fillStyle = COL.text;
+    c.fillRect(8, yc - 12, 12, 24);
+    c.beginPath(); c.moveTo(20, yc - 12); c.lineTo(xs - 6, yc - th * 0.9); c.lineTo(xs - 6, yc + th * 0.9); c.lineTo(20, yc + 12); c.closePath();
+    c.fillStyle = hexA(COL.text, 0.75); c.fill();
+    txt(c, 'ลำโพง', 6, yc + th + 14, { size: 11, color: COL.muted });
+    // envelope ของการกระจัด (คูณ A_res)
+    const ea = th * 0.85 * A;
+    c.beginPath();
+    for (let i = 0; i <= 200; i++) { const x = i / 200 * this.L; const y = yc - Math.abs(shape(x)) * ea; i ? c.lineTo(xs + x * sc, y) : c.moveTo(xs + x * sc, y); }
+    for (let i = 200; i >= 0; i--) { const x = i / 200 * this.L; c.lineTo(xs + x * sc, yc + Math.abs(shape(x)) * ea); }
+    c.closePath(); c.fillStyle = hexA(COL.disp, 0.14); c.fill(); c.strokeStyle = hexA(COL.disp, 0.8); c.lineWidth = 1.5; c.stroke();
+    // โมเลกุลสั่นตามยาว
+    const lamPx = v / this.f * sc, Dpx = Math.min(0.6 * lamPx / TAU, 12) * A, cosw = Math.cos(this.phase);
+    const nCol = Math.max(2, Math.floor(this.L * sc / 9));
+    c.fillStyle = COL.wave;
+    for (let i = 0; i <= nCol; i++) {
+      const x = i / nCol * this.L, dx = shape(x) * Dpx * cosw;
+      for (let j = 0; j < 5; j++) { const y = yc - th * 0.8 + j * th * 0.4; c.beginPath(); c.arc(xs + x * sc + dx, y, 1.8, 0, TAU); c.fill(); }
+    }
+    // ผนังท่อ (เรืองแสงเมื่อสั่นพ้อง)
+    c.save();
+    if (A > 0.9) { c.shadowColor = '#f59e0b'; c.shadowBlur = 18; c.strokeStyle = '#f59e0b'; c.lineWidth = 4; }
+    else { c.strokeStyle = COL.axis; c.lineWidth = 3; }
+    c.beginPath(); c.moveTo(xs, yc - th); c.lineTo(xe, yc - th); c.moveTo(xs, yc + th); c.lineTo(xe, yc + th); c.stroke();
+    c.restore();
+    if (closed) { // ลูกสูบ
+      c.fillStyle = COL.accent; c.fillRect(xe, yc - th + 2, 9, 2 * th - 4);
+      c.fillStyle = COL.axis; c.fillRect(xe + 9, yc - 3, W - xe - 9, 6);
+      txt(c, '⟷ ลากลูกสูบ', Math.min(xe + 14, W - 80), yc - th - 12, { size: 11, color: COL.accent, bold: true });
+    } else txt(c, 'ปลายเปิด', xe, yc - th - 12, { size: 11, color: COL.muted, align: 'center' });
+    txt(c, 'ปลายเปิด', xs, yc - th - 12, { size: 11, color: COL.muted, align: 'center' });
+    txt(c, `L = ${fx(this.L, 3)} m`, (xs + xe) / 2, yc + th + 14, { size: 12, bold: true, align: 'center' });
+  },
+  drawGraph() {
+    const st = this.cg; if (!st.w) return;
+    const c = st.ctx, W = st.w, H = st.h; clearCanvas(st);
+    const gx0 = 40, gx1 = W - 12, gy0 = 18, gy1 = H - 22;
+    const X = (L) => gx0 + (L - 0.1) / 1.4 * (gx1 - gx0), Y = (a) => gy1 - a * (gy1 - gy0);
+    c.strokeStyle = COL.grid; c.lineWidth = 1;
+    for (let a = 0; a <= 1; a += 0.5) { c.beginPath(); c.moveTo(gx0, Y(a)); c.lineTo(gx1, Y(a)); c.stroke(); txt(c, a.toFixed(1), gx0 - 6, Y(a), { size: 10, color: COL.muted, align: 'right' }); }
+    for (let L = 0.1; L <= 1.5001; L += 0.2) { c.beginPath(); c.moveTo(X(L), gy0); c.lineTo(X(L), gy1); c.stroke(); const last = L > 1.49; txt(c, last ? '1.5 m' : L.toFixed(1), last ? X(L) + 4 : X(L), gy1 + 10, { size: 10, color: COL.muted, align: last ? 'right' : 'center' }); }
+    txt(c, `A_res เทียบกับ L ที่ f = ${this.f} Hz, T = ${this.T} °C`, gx0 + 4, 9, { size: 11, color: COL.muted });
+    c.strokeStyle = COL.accent; c.lineWidth = 1.6; c.beginPath();
+    const N = 1400;
+    for (let i = 0; i <= N; i++) { const L = 0.1 + 1.4 * i / N, a = this.resonance(L).A; i ? c.lineTo(X(L), Y(a)) : c.moveTo(X(L), Y(a)); }
+    c.stroke();
+    c.fillStyle = COL.pres; c.beginPath(); c.arc(X(this.L), Y(this.res.A), 5, 0, TAU); c.fill();
+  }
+};
+TabController.register('t2', Tab2);
+
+const MISSION2 = {
+  objectives: ['หาความยาวท่อที่เกิดการสั่นพ้อง แล้วคำนวณอัตราเร็วเสียงได้', 'เปรียบเทียบฮาร์มอนิกของท่อปลายปิดกับท่อปลายเปิดได้'],
+  items: [
+    { type: 'q', id: 'Q1', tag: 'ถามก่อนขั้นตอนที่ 1', text: 'ถ้าเพิ่มอุณหภูมิอากาศจาก 25 °C เป็น 40 °C โดยใช้ f เดิม ตำแหน่ง L₁ จะ',
+      options: [{ k: 'ก', t: 'เลื่อนเข้า (สั้นลง)' }, { k: 'ข', t: 'เลื่อนออก (ยาวขึ้น)' }, { k: 'ค', t: 'ไม่เปลี่ยน' }],
+      answer: 'ข', explain: 'v เพิ่ม → λ = v/f เพิ่ม → L₁ = λ/4 เพิ่ม' },
+    { type: 'step', text: 'ท่อปลายปิด T = 25 °C f = 500 Hz เริ่มที่ L = 0.100 m ค่อยๆ เลื่อนลูกสูบออกจนเสียงดังที่สุดครั้งแรก แล้วกดบันทึก (L₁)' },
+    { type: 'step', text: 'เลื่อนต่อไปจนเสียงดังที่สุดครั้งที่สอง แล้วกดบันทึก (L₂)' },
+    { type: 'step', text: 'ดูค่า v_ทดลอง ในตาราง แล้วเทียบกับ 331 + 0.6T' },
+    { type: 'step', text: 'เปิดการแก้ปลาย แล้วหา L₁, L₂ ใหม่ สังเกตว่าค่าใดเปลี่ยน ค่าใดไม่เปลี่ยน' },
+    { type: 'q', id: 'Q2', text: 'ท่อปลายเปิด 2 ด้านที่ยาวเท่ากับท่อปลายปิด 1 ด้าน มีความถี่มูลฐานเป็นกี่เท่าของท่อปลายปิด',
+      options: [{ k: 'ก', t: '½ เท่า' }, { k: 'ข', t: 'เท่ากัน' }, { k: 'ค', t: '2 เท่า' }],
+      answer: 'ค', explain: 'ท่อปลายเปิดมี L = λ/2 ส่วนท่อปลายปิดมี L = λ/4 และท่อปลายเปิดมีฮาร์มอนิกครบทุกลำดับ ส่วนท่อปลายปิดมีเฉพาะลำดับคี่' },
+    { type: 'q', id: 'Q3', tag: 'ถามหลังขั้นตอนที่ 4', text: 'เหตุใดการทดลองจริงจึงคำนวณจาก L₂ − L₁ แทนการใช้ L₁ = λ/4 โดยตรง',
+      options: [{ k: 'ก', t: 'ทำให้คำนวณง่ายกว่า' }, { k: 'ข', t: 'ค่าการแก้ปลายหักล้างกันใน L₂ − L₁ ได้ λ/2 ที่แม่นยำกว่า' }, { k: 'ค', t: 'L₁ วัดไม่ได้' }],
+      answer: 'ข' }
+  ]
+};
+
+/* =====================================================================
+   แท็บ 3: บีตของเสียง
+   ===================================================================== */
+const Tab3 = {
+  f1: 256, f2: 258, ratio: 1, src1: true, src2: true, paused: false, nodes: null, tau: 0.02,
+  // แบบจำลองเฟสของ oscillator จริง: φᵢ(t) = pᵢ + 2πfᵢ(t − tref)
+  ph: { mode: 'perf', tref: 0, p1: 0, p2: 0 },
+  frozenT: 0, timer: null,
+  perfNow() { return performance.now() / 1000; },
+  clockNow() { return this.ph.mode === 'audio' ? AudioEngine.heardTime() : this.perfNow(); },
+  modelNow() { return this.ph.mode === 'audio' ? AudioEngine.now() : this.perfNow(); },
+  phasesAt(t) { const p = this.ph; return [p.p1 + TAU * this.f1 * (t - p.tref), p.p2 + TAU * this.f2 * (t - p.tref)]; },
+  amps() { return [this.src1 ? 1 : 0, this.src2 ? this.ratio : 0]; },
+  init() {
+    const box = $('t3Controls');
+    this.sF1 = makeSlider(box, { id: 't3F1', label: 'ความถี่แหล่ง 1: f₁', min: 200, max: 500, step: 0.5, value: this.f1, dec: 1, unit: 'Hz', pm: 0.5, pmLabel: '0.5', onInput: (v) => this.update({ f1: v }) });
+    this.sF2 = makeSlider(box, { id: 't3F2', label: 'ความถี่แหล่ง 2: f₂', min: 200, max: 500, step: 0.5, value: this.f2, dec: 1, unit: 'Hz', pm: 0.5, pmLabel: '0.5', onInput: (v) => this.update({ f2: v }) });
+    this.sR = makeSlider(box, { id: 't3R', label: 'อัตราส่วนแอมพลิจูด A₂/A₁', min: 0, max: 1, step: 0.05, value: this.ratio, dec: 2, pm: 0.05, onInput: (v) => this.update({ ratio: v }) });
+    $('t3Src1').addEventListener('change', (e) => this.update({ src1: e.target.checked }));
+    $('t3Src2').addEventListener('change', (e) => this.update({ src2: e.target.checked }));
+    $('t3Pause').addEventListener('click', () => { this.paused = !this.paused; if (this.paused) this.frozenT = this.clockNow(); setPauseBtn($('t3Pause'), this.paused); });
+    $('t3Sync').addEventListener('click', () => this.syncPhase());
+    $('t3TimerBtn').addEventListener('click', () => this.startTimer());
+    $('t3Tap').addEventListener('pointerdown', (e) => { e.preventDefault(); if (this.timer) { this.timer.count++; $('t3Tap').textContent = `แตะทุกครั้งที่ได้ยินเสียงดัง (${this.timer.count})`; } });
+    this.ph = { mode: 'perf', tref: this.perfNow(), p1: 0, p2: 0 };
+    this.cv = setupCanvas($('c3'));
+    this.update({});
+  },
+  update(p) {
+    // เมื่อความถี่เปลี่ยน ต้องต่อเฟสให้ต่อเนื่อง และหักส่วนที่ setTargetAtTime ยังไม่ถึงค่าใหม่ (Δf·τ)
+    if ((p.f1 !== undefined && p.f1 !== this.f1) || (p.f2 !== undefined && p.f2 !== this.f2)) {
+      const t = this.modelNow(), [a, b] = this.phasesAt(t), n1 = p.f1 !== undefined ? p.f1 : this.f1, n2 = p.f2 !== undefined ? p.f2 : this.f2;
+      const corr = this.ph.mode === 'audio' ? this.tau : 0;
+      this.ph.p1 = a - TAU * (n1 - this.f1) * corr; this.ph.p2 = b - TAU * (n2 - this.f2) * corr; this.ph.tref = t;
+    }
+    Object.assign(this, p);
+    const fB = Math.abs(this.f1 - this.f2), favg = (this.f1 + this.f2) / 2, [A1, A2] = this.amps();
+    setResults($('t3Results'), [
+      ['ความถี่บีต f<sub>B</sub> = |f₁ − f₂|', `${fx(fB, 1)} Hz`],
+      ['คาบบีต T<sub>B</sub> = 1/f<sub>B</sub>', fB > 0 ? `${fx(1 / fB, 3)} s` : '— (ไม่เกิดบีต)'],
+      ['f<sub>avg</sub> = (f₁ + f₂)/2', `${fx(favg, 1)} Hz<div class="note" style="font-weight:400">ได้ยินเป็นความถี่นี้เมื่อ f<sub>B</sub> มีค่าน้อย</div>`],
+      ['แอมพลิจูดสูงสุดของลัพธ์ (A₁ + A₂)', `${fx(A1 + A2, 2)} A₁`],
+      ['แอมพลิจูดต่ำสุดของลัพธ์ |A₁ − A₂|', `${fx(Math.abs(A1 - A2), 2)} A₁`]
+    ]);
+    const badge = $('t3Badge');
+    if (fB === 0) badge.textContent = 'ไม่เกิดบีต · ภาพแสดงแบบช้า — ความถี่คลื่นในภาพลดลง เสียงที่ได้ยินเป็นความถี่จริง';
+    else if (fB <= 10) badge.textContent = 'ภาพแสดงแบบช้า: จังหวะดัง–ค่อยเป็นเวลาจริง; ความถี่คลื่นพาหะในภาพลดลงเพื่อให้มองเห็น';
+    else badge.textContent = 'ภาพนิ่ง — ความถี่คลื่นในภาพลดลง เสียงที่ได้ยินเป็นความถี่จริง';
+    if (this.nodes) {
+      AudioEngine.ramp(this.nodes.a.o.frequency, this.f1); AudioEngine.ramp(this.nodes.b.o.frequency, this.f2);
+      AudioEngine.ramp(this.nodes.a.g.gain, 0.35 * A1); AudioEngine.ramp(this.nodes.b.g.gain, 0.35 * A2);
+    }
+  },
+  start() {
+    if (this.nodes || !AudioEngine.running) return;
+    const ctx = AudioEngine.ctx, t0 = ctx.currentTime + 0.05, [A1, A2] = this.amps();
+    this.tabGain = AudioEngine.makeTabGain(1);
+    // oscillator ทั้งสองเริ่มที่เวลาเดียวกัน เฟส sin = 0
+    this.nodes = { a: AudioEngine.makeOsc(this.f1, this.tabGain, 0.35 * A1, t0), b: AudioEngine.makeOsc(this.f2, this.tabGain, 0.35 * A2, t0) };
+    this.ph = { mode: 'audio', tref: t0, p1: 0, p2: 0 };
+  },
+  stop() {
+    if (!this.nodes) return;
+    const t = AudioEngine.now(), [a, b] = this.phasesAt(t);
+    AudioEngine.fadeOutAndStop(this.tabGain, [this.nodes.a.o, this.nodes.b.o]);
+    this.nodes = null; this.tabGain = null;
+    this.ph = { mode: 'perf', tref: this.perfNow(), p1: a, p2: b };   // ต่อเฟสด้วยนาฬิกาของเบราว์เซอร์
+  },
+  syncPhase() {
+    if (this.nodes) { this.stop(); setTimeout(() => this.start(), 80); }
+    else this.ph = { mode: 'perf', tref: this.perfNow(), p1: 0, p2: 0 };
+  },
+  startTimer() {
+    if (this.timer) return;
+    this.timer = { t0: performance.now(), count: 0 };
+    $('t3Tap').disabled = false; $('t3Tap').textContent = 'แตะทุกครั้งที่ได้ยินเสียงดัง (0)';
+    $('t3TimerBtn').disabled = true; $('t3CountRes').innerHTML = '';
+  },
+  tickTimer() {
+    if (!this.timer) return;
+    const el = (performance.now() - this.timer.t0) / 1000;
+    if (el < 10) { $('t3TimerTxt').textContent = `เหลือ ${fx(10 - el, 1)} s`; return; }
+    const n = this.timer.count, fm = n / 10, fth = Math.abs(this.f1 - this.f2);
+    $('t3TimerTxt').textContent = 'ครบ 10 s';
+    setResults($('t3CountRes'), [['จำนวนครั้งที่ได้ยินเสียงดัง', `${n} ครั้ง ใน 10 s`], ['f<sub>B</sub> ที่วัดได้ = จำนวนครั้ง/10 s', `${fx(fm, 1)} Hz`],
+      ['f<sub>B</sub> ทฤษฎี = |f₁ − f₂|', `${fx(fth, 1)} Hz`], ['ผลต่าง', fth > 0 ? `${fx(Math.abs(fm - fth) / fth * 100, 1)} %` : '—']]);
+    this.timer = null; $('t3Tap').disabled = true; $('t3Tap').textContent = 'แตะทุกครั้งที่ได้ยินเสียงดัง'; $('t3TimerBtn').disabled = false;
+  },
+  draw() {
+    this.tickTimer();
+    const st = this.cv; if (!st.w) return;
+    const c = st.ctx, W = st.w, H = st.h; clearCanvas(st);
+    const [A1, A2] = this.amps(), fB = Math.abs(this.f1 - this.f2), sgn = this.f1 >= this.f2 ? 1 : -1;
+    const tNow = this.paused ? this.frozenT : this.clockNow();
+    const gx0 = 12, gx1 = W - 12, gw = gx1 - gx0;
+    const rowH = (H - 34) / 3, mids = [0, 1, 2].map(i => 8 + rowH * (i + 0.5));
+    const amp1 = rowH * 0.36, amp3 = rowH * 0.22;   // แถว 3 ต้องรองรับ A₁ + A₂ ≤ 2
+    // ผลต่างเฟสจริง Δφ(τ) = φ₁(τ) − φ₂(τ)
+    const dphi = (tau) => { const [a, b] = this.phasesAt(tau); return a - b; };
+    let Wt, cyc, scroll;   // Wt = ความกว้างหน้าต่างเวลา (s), cyc = จำนวนรอบพาหะในภาพ
+    if (fB === 0) { Wt = 1; cyc = 10; scroll = false; }
+    else if (fB <= 10) { Wt = 2 / fB; cyc = 24; scroll = true; }      // f_c′ = 12·f_B → 24 รอบใน 2 คาบบีต
+    else { Wt = 2 / fB; cyc = 24; scroll = false; }
+    cyc = Math.min(cyc, Math.floor(gw / 8));
+    // เวลาจริงที่ตำแหน่ง x: τ = tNow − Wt + (x/gw)·Wt (ภาพนิ่งเมื่อ f_B > 10 Hz)
+    const tAt = (u) => (scroll ? tNow - Wt : 0) + u * Wt;
+    const dphiAt = (u) => (fB === 0 ? dphi(tNow) : (scroll ? dphi(tAt(u)) : sgn * TAU * fB * tAt(u)));
+    // ตรึงเฟสพาหะไว้กับตำแหน่งบนจอ (กัน aliasing) ส่วน Δφ/2 เลื่อนตามเวลาจริง
+    const y1 = (u) => A1 * Math.sin(TAU * cyc * u + dphiAt(u) / 2);
+    const y2 = (u) => A2 * Math.sin(TAU * cyc * u - dphiAt(u) / 2);
+    const env = (u) => Math.sqrt(Math.max(0, A1 * A1 + A2 * A2 + 2 * A1 * A2 * Math.cos(dphiAt(u))));
+    const plot = (fn, mid, a, col, lw) => { c.strokeStyle = col; c.lineWidth = lw; c.beginPath(); const N = Math.max(400, gw * 1.5); for (let i = 0; i <= N; i++) { const u = i / N, y = mid - fn(u) * a; i ? c.lineTo(gx0 + u * gw, y) : c.moveTo(gx0 + u * gw, y); } c.stroke(); };
+    mids.forEach(m => { c.strokeStyle = COL.grid; c.lineWidth = 1; c.beginPath(); c.moveTo(gx0, m); c.lineTo(gx1, m); c.stroke(); });
+    plot(y1, mids[0], amp1, COL.disp, 1.6);
+    plot(y2, mids[1], amp1, COL.pres, 1.6);
+    c.setLineDash([5, 4]); plot(env, mids[2], amp3, COL.muted, 1.3); plot((u) => -env(u), mids[2], amp3, COL.muted, 1.3); c.setLineDash([]);
+    plot((u) => y1(u) + y2(u), mids[2], amp3, COL.accent, 1.8);
+    txt(c, `แถว 1: คลื่น f₁ = ${fx(this.f1, 1)} Hz${this.src1 ? '' : ' (ปิด)'}`, gx0 + 2, mids[0] - rowH * 0.45, { size: 11, color: COL.disp, bold: true });
+    txt(c, `แถว 2: คลื่น f₂ = ${fx(this.f2, 1)} Hz${this.src2 ? '' : ' (ปิด)'}`, gx0 + 2, mids[1] - rowH * 0.45, { size: 11, color: COL.pres, bold: true });
+    txt(c, 'แถว 3: คลื่นลัพธ์ y = y₁ + y₂ (เส้นประ = envelope)', gx0 + 2, mids[2] - rowH * 0.45, { size: 11, color: COL.accent, bold: true });
+    // แกนเวลา
+    const ya = H - 14;
+    c.strokeStyle = COL.axis; c.lineWidth = 1; c.beginPath(); c.moveTo(gx0, ya - 8); c.lineTo(gx1, ya - 8); c.stroke();
+    if (scroll) {
+      for (let i = 0; i <= 4; i++) { const u = i / 4, x = gx0 + u * gw; c.beginPath(); c.moveTo(x, ya - 11); c.lineTo(x, ya - 5); c.stroke();
+        txt(c, i === 4 ? 'ขณะนี้' : `−${fx(Wt * (1 - u), 2)} s`, x, ya + 2, { size: 10, color: COL.muted, align: i === 0 ? 'left' : i === 4 ? 'right' : 'center' }); }
+      c.strokeStyle = COL.accent; c.lineWidth = 2; c.beginPath(); c.moveTo(gx1 - 1, 8); c.lineTo(gx1 - 1, ya - 8); c.stroke();
+    } else txt(c, `ช่วงเวลาที่แสดง ${fx(Wt, 2)} s (เวลาจริง)`, gx0, ya + 2, { size: 10, color: COL.muted });
+    if (fB > 10) {
+      const msg1 = 'เกิน ~10 Hz หูเริ่มรับรู้เป็นเสียงหยาบ/สั่นเร็ว;', msg2 = 'ต่างกันมากกว่า ~15–20 Hz จะเริ่มได้ยินเป็น 2 เสียง';
+      c.fillStyle = hexA(COL['canvas-bg'], 0.88); c.fillRect(W / 2 - 190, H / 2 - 26, 380, 52);
+      c.strokeStyle = COL.warn; c.lineWidth = 1.5; c.strokeRect(W / 2 - 190, H / 2 - 26, 380, 52);
+      txt(c, msg1, W / 2, H / 2 - 10, { size: 12, align: 'center', bold: true, color: COL.warn });
+      txt(c, msg2, W / 2, H / 2 + 10, { size: 12, align: 'center', bold: true, color: COL.warn });
+    }
+    // ไฟความดัง: สว่างตาม envelope ณ ขณะนี้ (เวลาเดียวกับเสียงที่ได้ยิน)
+    const lamp = $('t3Lamp'), maxA = A1 + A2;
+    let lv = maxA > 0 ? env(scroll || fB === 0 ? 1 : 0.5) / maxA : 0;
+    if (fB > 10) lv = maxA > 0 ? 0.6 : 0;
+    lamp.style.background = `rgba(245,158,11,${(0.08 + 0.92 * lv).toFixed(3)})`;
+    lamp.style.boxShadow = `0 0 ${(4 + 22 * lv).toFixed(1)}px rgba(245,158,11,${(0.9 * lv).toFixed(2)})`;
+  }
+};
+TabController.register('t3', Tab3);
+
+const MISSION3 = {
+  objectives: ['อธิบายการเกิดบีตด้วยการซ้อนทับของคลื่นได้', 'คำนวณความถี่บีตและความถี่เสียงที่ได้ยินได้'],
+  items: [
+    { type: 'step', text: 'ตั้ง f₁ = f₂ = 256 Hz ฟังและดูกราฟลัพธ์' },
+    { type: 'step', text: 'ตั้ง f₂ = 258 Hz ใช้เครื่องมือนับบีต 10 วินาที แล้วเทียบกับ |f₁ − f₂|' },
+    { type: 'q', id: 'Q1', tag: 'ถามก่อนขั้นตอนที่ 3', text: 'ถ้า A₂ น้อยกว่า A₁ เสียงช่วง "ค่อย" จะเงียบสนิทหรือไม่',
+      options: [{ k: 'ก', t: 'เงียบสนิทเหมือนเดิม' }, { k: 'ข', t: 'ไม่เงียบสนิท ต่ำสุดเท่ากับ |A₁ − A₂|' }, { k: 'ค', t: 'ไม่เกิดบีตเลย' }],
+      answer: 'ข' },
+    { type: 'step', text: 'ปิดแหล่ง 2 แล้วเปิดใหม่ จากนั้นลด A₂/A₁ เหลือ 0.5 สังเกตความลึกของการดัง–ค่อย' },
+    { type: 'step', text: 'ค่อยๆ เพิ่ม f₂ จนผลต่างถึง 15–20 Hz สังเกตว่าเสียงที่ได้ยินเปลี่ยนไปอย่างไร' },
+    { type: 'q', id: 'Q2', text: 'ส้อมเสียง 300 Hz กับ 304 Hz ดังพร้อมกัน จะได้ยินเสียงระดับใด และดัง–ค่อยกี่ครั้งต่อวินาที',
+      options: [{ k: 'ก', t: '304 Hz, 2 ครั้ง' }, { k: 'ข', t: '302 Hz, 4 ครั้ง' }, { k: 'ค', t: '4 Hz, 302 ครั้ง' }],
+      answer: 'ข', explain: 'f_avg = 302 Hz, f_B = 4 Hz' },
+    { type: 'q', id: 'Q3', text: 'ตั้งสายกีตาร์เทียบกับส้อมเสียง 256 Hz ได้ยินบีต 3 ครั้งต่อวินาที รู้หรือไม่ว่าสายตึงเกินหรือหย่อนเกิน',
+      options: [{ k: 'ก', t: 'รู้ ต้องเป็น 259 Hz' }, { k: 'ข', t: 'ยังรู้ไม่ได้ เพราะ 253 กับ 259 Hz ให้บีต 3 Hz เท่ากัน ต้องลองขันสายเล็กน้อยแล้วดูว่าบีตช้าลงหรือเร็วขึ้น' }, { k: 'ค', t: 'รู้ ต้องเป็น 253 Hz' }],
+      answer: 'ข' }
+  ]
+};
+
+/* =====================================================================
+   แท็บ 4: ปรากฏการณ์ดอปเพลอร์ (มุมมองจากด้านบน 2 มิติ, คิดเวลาหน่วง)
+   ===================================================================== */
+const Tab4 = {
+  fs: 400, v: 343, vs: 100, vo: 0, d: 30, speed: 0.25, loop: false,
+  t: 0, running: false, ended: false, paused: false, samples: [], boomed: false, prevCount: 0, flash: 0,
+  nodes: null, roots: [],
+  get x0() { return this.vs > 0 ? -200 : -100; },
+  srcX(t) { return this.x0 + this.vs * t; },
+  obsX(t) { return this.vo * t; },
+  tEnd() { return this.vs > 0 ? (220 - this.x0) / this.vs : Infinity; },
+  // แก้สมการเวลาหน่วง |r_o(t) − r_s(t_e)| = v(t − t_e) โดย 0 ≤ t_e ≤ t
+  // (X − v_s t_e)² + d² = v²(t − t_e)² → (v_s² − v²)t_e² + (2v²t − 2Xv_s)t_e + (X² + d² − v²t²) = 0
+  solve(t) {
+    const v = this.v, vs = this.vs, d = this.d, X = this.obsX(t) - this.x0;
+    const a = vs * vs - v * v, b = 2 * v * v * t - 2 * X * vs, cc = X * X + d * d - v * v * t * t;
+    let te = [];
+    if (Math.abs(a) < 1e-9) { if (Math.abs(b) > 1e-12) te = [-cc / b]; }
+    else { const D = b * b - 4 * a * cc; if (D >= 0) { const s = Math.sqrt(D); te = [(-b - s) / (2 * a), (-b + s) / (2 * a)]; } }
+    const eps = 1e-9;
+    te = te.filter(x => x >= -eps && x <= t + eps).map(x => clamp(x, 0, t)).sort((p, q) => q - p);   // t_e มากสุดก่อน
+    if (te.length === 2 && Math.abs(te[0] - te[1]) < 1e-12 && Math.abs(a) < 1e-9) te = [te[0]];
+    return te.map(tei => {
+      const R = v * (t - tei), sx = this.srcX(tei), ox = this.obsX(t);
+      let ux = R > 1e-6 ? (ox - sx) / R : (this.vs >= this.vo ? -1 : 1);
+      // f_o = f_s·|(v − û·v⃗_o)/(v − û·v⃗_s)| (û จากตำแหน่งปล่อยไปยังผู้สังเกต)
+      const den = v - ux * this.vs, num = v - ux * this.vo;
+      const f = Math.abs(den) < 1e-9 ? Infinity : this.fs * Math.abs(num / den);
+      return { te: tei, R, sx, ux, f, gain: 1 / (1 + R / 20) };
+    });
+  },
+  init() {
+    const box = $('t4Controls');
+    const resetOn = (key) => (v) => { this[key] = v; this.reset(); this.update({}); };
+    this.sFs = makeSlider(box, { id: 't4Fs', label: 'ความถี่แหล่งกำเนิด f<sub>s</sub>', min: 200, max: 800, step: 1, value: this.fs, unit: 'Hz', pm: 1, onInput: (v) => this.update({ fs: v }) });
+    this.sV = makeSlider(box, { id: 't4V', label: 'อัตราเร็วเสียง v', min: 300, max: 400, step: 1, value: this.v, unit: 'm/s', pm: 1, note: '343 m/s ≈ อากาศ 20 °C', onInput: resetOn('v') });
+    this.sVs = makeSlider(box, { id: 't4Vs', label: 'อัตราเร็วแหล่งกำเนิด v<sub>s</sub>', min: 0, max: 700, step: 0.5, value: this.vs, pm: 0.5, pmLabel: '0.5',
+      fmt: (x) => `${x.toFixed(1)} m/s (M = ${(x / this.v).toFixed(2)})`, onInput: resetOn('vs') });
+    this.sVo = makeSlider(box, { id: 't4Vo', label: 'อัตราเร็วผู้สังเกต v<sub>o</sub>', min: -100, max: 100, step: 1, value: this.vo, unit: 'm/s', pm: 1, note: '+ = ไปทางขวา (ทิศเดียวกับแหล่งกำเนิด), − = วิ่งสวนแหล่งกำเนิด', onInput: resetOn('vo') });
+    this.sD = makeSlider(box, { id: 't4D', label: 'ระยะผู้สังเกตจากแนวการเคลื่อนที่ d', min: 0, max: 100, step: 1, value: this.d, unit: 'm', pm: 1, onInput: resetOn('d') });
+    this.sSp = makeSlider(box, { id: 't4Sp', label: 'ความเร็วจำลอง', min: 0.05, max: 1, step: 0.05, value: this.speed, dec: 2, unit: '×', pm: 0.05, note: 'เปลี่ยน v, v_s, v_o หรือ d แล้วการจำลองจะเริ่มใหม่', onInput: (v) => this.update({ speed: v }) });
+    $('t4Play').addEventListener('click', () => { if (this.ended || this.t === 0) this.reset(); this.running = true; this.ended = false; this.paused = false; setPauseBtn($('t4Pause'), false); this.updateButtons(); });
+    $('t4Reset').addEventListener('click', () => { this.reset(); this.update({}); });
+    $('t4Pause').addEventListener('click', () => { this.paused = !this.paused; setPauseBtn($('t4Pause'), this.paused); });
+    $('t4Loop').addEventListener('change', (e) => { this.loop = e.target.checked; });
+    this.cv = setupCanvas($('c4')); this.cg = setupCanvas($('c4g'));
+    this.reset(); this.update({});
+  },
+  reset() {
+    this.t = 0; this.running = false; this.ended = false; this.samples = []; this.boomed = false; this.flash = 0;
+    this.roots = this.solve(0); this.prevCount = this.roots.length;
+    this.sVs && this.sVs.show();
+    this.updateButtons();
+  },
+  updateButtons() { $('t4Play').textContent = this.running ? '▶ กำลังวิ่งผ่าน…' : '▶ เริ่มวิ่งผ่าน'; $('t4Play').disabled = this.running; },
+  update(p) {
+    Object.assign(this, p);
+    $('t4Badge').textContent = `ภาพแสดงแบบช้า (${this.speed.toFixed(2)}×) — ความถี่ที่ได้ยินเป็น f_o จริง ณ สถานะนั้น`;
+    this.roots = this.solve(this.t);
+    this.renderInfo();
+    this.applyAudio();
+  },
+  renderInfo() {
+    const v = this.v, vs = this.vs, M = vs / v, R = this.roots;
+    let foTxt;
+    if (R.length === 0) foTxt = (vs >= v && this.t > 0) ? 'เงียบ (กรวยมัคยังมาไม่ถึง)' : '— (เสียงยังมาไม่ถึง)';
+    else foTxt = R.map(r => Number.isFinite(r.f) && r.f < 1e5 ? `${fx(r.f, 1)} Hz` : '> 100 kHz').join(' และ ');
+    setResults($('t4Results'), [
+      ['f<sub>o</sub> ขณะนี้', foTxt],
+      ['λ<sub>หน้า</sub> = (v − v<sub>s</sub>)/f<sub>s</sub>', vs >= v ? 'ไม่มีหน้าคลื่นนำหน้าแหล่งกำเนิด' : `${fx((v - vs) / this.fs, 3)} m`],
+      ['λ<sub>หลัง</sub> = (v + v<sub>s</sub>)/f<sub>s</sub>', `${fx((v + vs) / this.fs, 3)} m`],
+      ['เลขมัค M = v<sub>s</sub>/v', fx(M, 2)],
+      ['มุมครึ่งกรวย θ = arcsin(v/v<sub>s</sub>)', vs > v ? `${fx(Math.asin(v / vs) * 180 / Math.PI, 1)}°` : (vs === v ? '90.0°' : '— (ไม่เกิดคลื่นกระแทก)')],
+      ['เวลาจำลอง t', `${fx(this.t, 2)} s`]
+    ]);
+    // สูตรบนแนวการเคลื่อนที่ + ไฮไลต์เครื่องหมายตามสถานการณ์ขณะนั้น
+    const ux = R.length ? R[0].ux : Math.sign(this.obsX(this.t) - this.srcX(this.t)) || 1;
+    const obsToward = -ux * this.vo > 0, obsAway = -ux * this.vo < 0, srcToward = ux * vs > 0, srcAway = ux * vs < 0;
+    const hl = (s, on) => on ? `<span class="hl">${s}</span>` : s;
+    const num = `v ${hl('±', obsToward || obsAway)} v<sub>o</sub>`, den = `v ${hl('∓', srcToward || srcAway)} v<sub>s</sub>`;
+    const sNum = obsAway ? '−' : '+', sDen = srcAway ? '+' : '−';
+    const fLine = this.fs * (v + (sNum === '+' ? 1 : -1) * Math.abs(this.vo)) / (v + (sDen === '+' ? 1 : -1) * Math.abs(vs));
+    $('t4Formula').innerHTML = `บนแนวการเคลื่อนที่: f<sub>o</sub> = f<sub>s</sub>(${num})/(${den}) · เครื่องหมายบน = เคลื่อนที่เข้าหากัน<br>
+      ขณะนี้: ผู้สังเกต${this.vo === 0 ? 'อยู่นิ่ง' : obsToward ? '<b>เข้าหา</b>แหล่งกำเนิด (ใช้ +)' : '<b>ออกห่าง</b>แหล่งกำเนิด (ใช้ −)'} · แหล่งกำเนิด${vs === 0 ? 'อยู่นิ่ง' : srcToward ? '<b>เข้าหา</b>ผู้สังเกต (ใช้ −)' : '<b>ออกห่าง</b>ผู้สังเกต (ใช้ +)'}<br>
+      = ${this.fs} × (${v} ${sNum} ${Math.abs(this.vo)})/(${v} ${sDen} ${vs}) = ${fLine > 0 && Number.isFinite(fLine) ? fx(fLine, 1) + ' Hz' : '— (v<sub>s</sub> ≥ v)'} ${this.d > 0 ? '<span class="note">(ค่านี้ตรงเฉพาะเมื่อ d = 0)</span>' : ''}`;
+  },
+  start() {
+    if (this.nodes || !AudioEngine.running) return;
+    this.tabGain = AudioEngine.makeTabGain(1);
+    this.nodes = { a: AudioEngine.makeOsc(this.fs, this.tabGain, 0), b: AudioEngine.makeOsc(this.fs, this.tabGain, 0) };
+    this.applyAudio();
+  },
+  stop() {
+    if (!this.nodes) return;
+    AudioEngine.fadeOutAndStop(this.tabGain, [this.nodes.a.o, this.nodes.b.o]);
+    this.nodes = null; this.tabGain = null;
+  },
+  applyAudio() {
+    if (!this.nodes) return;
+    const live = this.running || (this.t > 0 && !this.ended);
+    [this.nodes.a, this.nodes.b].forEach((n, i) => {
+      const r = this.roots[i];
+      if (live && r) { AudioEngine.ramp(n.o.frequency, Math.min(r.f, 8000)); AudioEngine.ramp(n.g.gain, 0.5 * r.gain); }
+      else AudioEngine.ramp(n.g.gain, 0);
+    });
+  },
+  boom() {
+    this.flash = 1;
+    if (!this.nodes || !AudioEngine.running) return;
+    // เสียงบูม: white noise → lowpass ~150 Hz → decay 0.4 s
+    const ctx = AudioEngine.ctx, t = ctx.currentTime, len = Math.floor(ctx.sampleRate * 0.8), buf = ctx.createBuffer(1, len, ctx.sampleRate), ch = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) ch[i] = Math.random() * 2 - 1;
+    const src = ctx.createBufferSource(), lp = ctx.createBiquadFilter(), g = ctx.createGain();
+    src.buffer = buf; lp.type = 'lowpass'; lp.frequency.setValueAtTime(150, t); lp.Q.setValueAtTime(0.7, t);
+    g.gain.setValueAtTime(0, t); g.gain.setTargetAtTime(2.2, t, 0.004); g.gain.setTargetAtTime(0, t + 0.02, 0.1);
+    src.connect(lp); lp.connect(g); g.connect(this.tabGain);
+    src.start(t); src.stop(t + 0.8);
+    src.onended = () => { try { src.disconnect(); lp.disconnect(); g.disconnect(); } catch (e) {} };
+  },
+  step(dt) {
+    if (!this.running || this.paused) return;
+    this.t += dt * this.speed;
+    const tE = this.tEnd();
+    if (this.t >= tE || Math.abs(this.obsX(this.t)) > 240 || this.t > 600) {
+      this.t = Math.min(this.t, tE);
+      if (this.loop) { this.reset(); this.running = true; this.updateButtons(); }
+      else { this.running = false; this.ended = true; this.updateButtons(); }
+    }
+    this.roots = this.solve(this.t);
+    const n = this.roots.length;
+    // กรวยมัคมาถึงผู้สังเกต: จำนวนคำตอบเพิ่มเป็น 2 (หรือเป็น 1 เมื่อ M = 1 พอดี)
+    if (this.vs >= this.v && !this.boomed && n > this.prevCount && (n === 2 || this.vs === this.v)) { this.boomed = true; this.boom(); }
+    this.prevCount = n;
+    this.samples.push({ t: this.t, f: this.roots.map(r => r.f) });
+    if (this.samples.length > 6000) this.samples.splice(0, this.samples.length - 6000);
+  },
+  draw(dt) {
+    this.step(dt);
+    if (this.flash > 0) this.flash = Math.max(0, this.flash - dt * 1.5);
+    this.applyAudio();
+    if (!this._lastInfo || performance.now() - this._lastInfo > 100) { this.renderInfo(); this._lastInfo = performance.now(); }
+    this.drawScene(); this.drawGraph();
+  },
+  drawScene() {
+    const st = this.cv; if (!st.w) return;
+    const c = st.ctx, W = st.w, H = st.h; clearCanvas(st);
+    const sc = Math.min(W / 440, H / 220), cx = W / 2, cy = H / 2;
+    const P = (x, y) => [cx + x * sc, cy - y * sc];
+    const v = this.v, t = this.t;
+    // แนวการเคลื่อนที่
+    c.setLineDash([6, 6]); c.strokeStyle = COL.grid; c.lineWidth = 1.5;
+    c.beginPath(); c.moveTo(0, cy); c.lineTo(W, cy); c.stroke(); c.setLineDash([]);
+    // หน้าคลื่น: 1 วงทุก N รอบ ให้ระยะห่างบนจอ ≈ 25 px เมื่อ v_s = 0
+    const Ncyc = Math.max(1, Math.round(25 * this.fs / (v * sc))), dtE = Ncyc / this.fs;
+    const Rmax = Math.hypot(W, H) / sc + 50;
+    const kMin = Math.max(0, Math.ceil((t - Rmax / v) / dtE)), kMax = Math.floor(t / dtE + 1e-9);
+    c.lineWidth = 1.2;
+    for (let k = kMax; k >= kMin; k--) {
+      const te = k * dtE, R = v * (t - te), [px, py] = P(this.srcX(te), 0);
+      c.strokeStyle = hexA(COL.accent, clamp(0.85 - R / 400, 0.15, 0.85));
+      c.beginPath(); c.arc(px, py, Math.max(0.5, R * sc), 0, TAU); c.stroke();
+    }
+    // กรวยมัค: มุมครึ่งกรวย θ = arcsin(v/v_s) ยาวถึงจุดสัมผัสกับหน้าคลื่นวงแรก
+    if (this.vs > v && t > 0) {
+      const th = Math.asin(v / this.vs), Lc = t * Math.sqrt(this.vs * this.vs - v * v), [ax, ay] = P(this.srcX(t), 0);
+      c.strokeStyle = this.flash > 0 ? '#f59e0b' : COL.pres; c.lineWidth = 2.5 + 5 * this.flash;
+      c.beginPath();
+      c.moveTo(ax - Lc * sc * Math.cos(th), ay - Lc * sc * Math.sin(th)); c.lineTo(ax, ay); c.lineTo(ax - Lc * sc * Math.cos(th), ay + Lc * sc * Math.sin(th));
+      c.stroke();
+    }
+    // เส้นประจากตำแหน่งปล่อยเสียงถึงผู้สังเกต
+    const [ox, oy] = P(this.obsX(t), this.d);
+    this.roots.forEach((r, i) => {
+      const [ex, ey] = P(r.sx, 0);
+      c.setLineDash([4, 4]); c.strokeStyle = i === 0 ? COL.hl3 : COL.hl2; c.lineWidth = 1.8;
+      c.beginPath(); c.moveTo(ex, ey); c.lineTo(ox, oy); c.stroke(); c.setLineDash([]);
+      c.strokeStyle = i === 0 ? COL.hl3 : COL.hl2; c.lineWidth = 2;
+      c.beginPath(); c.moveTo(ex - 5, ey - 5); c.lineTo(ex + 5, ey + 5); c.moveTo(ex + 5, ey - 5); c.lineTo(ex - 5, ey + 5); c.stroke();
+      if (i === 0) txt(c, 'ปล่อยเสียงที่ได้ยินตอนนี้', ex, ey + 14, { size: 10, color: COL.hl3, align: 'center' });
+    });
+    // แหล่งกำเนิด
+    const [sx, sy] = P(this.srcX(t), 0);
+    c.fillStyle = COL.pres; c.beginPath(); c.arc(sx, sy, 7, 0, TAU); c.fill();
+    txt(c, 'แหล่งกำเนิด →', sx, sy - 14, { size: 11, color: COL.pres, align: 'center', bold: true });
+    // ผู้สังเกต (รูปคน)
+    c.strokeStyle = COL.text; c.fillStyle = COL.text; c.lineWidth = 2;
+    c.beginPath(); c.arc(ox, oy - 12, 5, 0, TAU); c.fill();
+    c.beginPath(); c.moveTo(ox, oy - 7); c.lineTo(ox, oy + 5); c.moveTo(ox - 6, oy - 2); c.lineTo(ox + 6, oy - 2); c.moveTo(ox, oy + 5); c.lineTo(ox - 5, oy + 12); c.moveTo(ox, oy + 5); c.lineTo(ox + 5, oy + 12); c.stroke();
+    txt(c, 'ผู้สังเกต', ox + 10, oy - 12, { size: 11, bold: true });
+    // ข้อมูลบนจอ
+    txt(c, `1 วง = ${Ncyc} รอบ`, 8, 12, { size: 11, color: COL.muted, bold: true });
+    const bar = 50 * sc; c.strokeStyle = COL.muted; c.lineWidth = 2; c.beginPath(); c.moveTo(8, H - 10); c.lineTo(8 + bar, H - 10); c.stroke();
+    txt(c, '50 m', 12 + bar, H - 10, { size: 10, color: COL.muted });
+    if (this.vs >= v && this.roots.length === 0 && t > 0) txt(c, 'เงียบ — กรวยมัคยังมาไม่ถึงผู้สังเกต', W / 2, H - 12, { size: 12, color: COL.warn, bold: true, align: 'center' });
+    if (this.flash > 0) txt(c, 'บูม!', ox, oy + 28, { size: 16 + 10 * this.flash, color: '#f59e0b', bold: true, align: 'center' });
+  },
+  drawGraph() {
+    const st = this.cg; if (!st.w) return;
+    const c = st.ctx, W = st.w, H = st.h; clearCanvas(st);
+    const gx0 = 52, gx1 = W - 12, gy0 = 18, gy1 = H - 22, fs = this.fs;
+    const tE = this.tEnd();
+    const xa = Number.isFinite(tE) ? 0 : Math.max(0, this.t - 10), xb = Number.isFinite(tE) ? tE : Math.max(10, this.t);
+    let lo = fs, hi = fs;
+    this.samples.forEach(s => s.f.forEach(f => { if (Number.isFinite(f)) { lo = Math.min(lo, f); hi = Math.max(hi, Math.min(f, 4 * fs)); } }));
+    const pad = (hi - lo) * 0.1 + 10; lo = Math.max(0, lo - pad); hi = hi + pad;
+    const X = (t) => gx0 + (t - xa) / (xb - xa) * (gx1 - gx0), Y = (f) => gy1 - (f - lo) / (hi - lo) * (gy1 - gy0);
+    c.strokeStyle = COL.axis; c.lineWidth = 1; c.beginPath(); c.moveTo(gx0, gy0); c.lineTo(gx0, gy1); c.lineTo(gx1, gy1); c.stroke();
+    for (let i = 0; i <= 4; i++) { const f = lo + (hi - lo) * i / 4; txt(c, f.toFixed(0), gx0 - 4, Y(f), { size: 10, color: COL.muted, align: 'right' }); }
+    for (let i = 0; i <= 5; i++) { const tt = xa + (xb - xa) * i / 5; txt(c, tt.toFixed(1) + (i === 5 ? ' s' : ''), X(tt) + (i === 5 ? 4 : 0), gy1 + 10, { size: 10, color: COL.muted, align: i === 5 ? 'right' : 'center' }); }
+    txt(c, 'f_o (Hz) เทียบกับเวลา t (s)', gx0 + 4, 9, { size: 11, color: COL.muted, bold: true });
+    // เส้น f_s
+    c.setLineDash([5, 4]); c.strokeStyle = COL.muted; c.beginPath(); c.moveTo(gx0, Y(fs)); c.lineTo(gx1, Y(fs)); c.stroke(); c.setLineDash([]);
+    txt(c, `f_s = ${fs} Hz`, gx1 - 2, Y(fs) - 8, { size: 10, color: COL.muted, align: 'right' });
+    // เส้นแนวตั้ง: ขณะที่แหล่งกำเนิดอยู่ใกล้ผู้สังเกตที่สุด
+    const rel = this.vs - this.vo;
+    if (Math.abs(rel) > 1e-9) { const tc = -this.x0 / rel; if (tc > xa && tc < xb) { c.strokeStyle = COL.pres; c.lineWidth = 1.2; c.beginPath(); c.moveTo(X(tc), gy0); c.lineTo(X(tc), gy1); c.stroke(); txt(c, 'ใกล้ที่สุด', X(tc) + 3, gy0 + 4, { size: 10, color: COL.pres }); } }
+    // ข้อมูล f_o (จุด) — สีตามลำดับคำตอบ
+    c.save(); c.beginPath(); c.rect(gx0, gy0, gx1 - gx0, gy1 - gy0); c.clip();
+    [COL.hl3, COL.hl2].forEach((col, i) => {
+      c.fillStyle = col;
+      this.samples.forEach(s => { const f = s.f[i]; if (f === undefined || !Number.isFinite(f) || s.t < xa) return; c.fillRect(X(s.t) - 1.2, Y(Math.min(f, hi)) - 1.2, 2.4, 2.4); });
+    });
+    c.restore();
+  }
+};
+TabController.register('t4', Tab4);
+
+const MISSION4 = {
+  objectives: ['อธิบายการเปลี่ยนความถี่จากการเคลื่อนที่ของแหล่งกำเนิด/ผู้สังเกตด้วยภาพหน้าคลื่นได้', 'อธิบายการเกิดคลื่นกระแทกเมื่อ v_s > v ได้'],
+  items: [
+    { type: 'step', text: 'ตั้ง v_s = 0 สังเกตหน้าคลื่นและ f_o' },
+    { type: 'step', text: 'ตั้ง f_s = 400 Hz, v = 343 m/s, v_s = 171.5 m/s (M = 0.5), d = 0 บันทึก f_o ก่อนและหลังแหล่งกำเนิดผ่าน (ทฤษฎี: 800 Hz และ 266.7 Hz)' },
+    { type: 'q', id: 'Q1', tag: 'ถามก่อนขั้นตอนที่ 3', text: 'เมื่อ d > 0 ณ วินาทีที่แหล่งกำเนิดอยู่ใกล้ผู้สังเกตที่สุด ผู้สังเกตได้ยินความถี่เท่าใด',
+      options: [{ k: 'ก', t: 'เท่ากับ f_s พอดี' }, { k: 'ข', t: 'ยังสูงกว่า f_s' }, { k: 'ค', t: 'ต่ำกว่า f_s' }],
+      answer: 'ข', explain: 'เสียงที่ได้ยินในวินาทีนั้นถูกปล่อยออกมาก่อนหน้า ตอนที่แหล่งกำเนิดยังเคลื่อนที่เข้าหา ส่วนเสียงที่ปล่อยจากจุดใกล้ที่สุด (มีความถี่ f_s เพราะความเร็วตั้งฉากกับแนวเส้นเชื่อม) จะมาถึงหลังจากนั้นประมาณ d/v วินาที' },
+    { type: 'step', text: 'ตั้ง d = 50 m แล้วเล่นใหม่ เปรียบเทียบรูปกราฟ f_o–t กับกรณี d = 0' },
+    { type: 'step', text: 'ตั้ง v_s = 514.5 m/s (M = 1.5) สังเกตกรวยมัค ช่วงที่เงียบ และจังหวะที่ได้ยินเสียงบูม ตรวจมุม θ = arcsin(1/1.5) ≈ 41.8°' },
+    { type: 'q', id: 'Q2', text: 'ถ้าแหล่งกำเนิดอยู่นิ่ง และผู้สังเกตวิ่งเข้าหา ความยาวคลื่นในอากาศเปลี่ยนหรือไม่',
+      options: [{ k: 'ก', t: 'สั้นลง' }, { k: 'ข', t: 'ยาวขึ้น' }, { k: 'ค', t: 'ไม่เปลี่ยน แต่ผู้สังเกตพบหน้าคลื่นถี่ขึ้น จึงได้ยิน f สูงขึ้น' }],
+      answer: 'ค' },
+    { type: 'q', id: 'Q3', text: 'เมื่อ M = 1.5 ผู้สังเกตได้ยินเสียงเครื่องบินก่อนที่เครื่องบินจะผ่านเหนือศีรษะหรือไม่',
+      options: [{ k: 'ก', t: 'ได้ยิน แต่เสียงสูงมาก' }, { k: 'ข', t: 'ไม่ได้ยินเลย จนกว่ากรวยมัคจะมาถึง ซึ่งเกิดหลังจากเครื่องบินผ่านไปแล้ว' }, { k: 'ค', t: 'ได้ยินตามปกติ' }],
+      answer: 'ข' }
+  ]
+};
+
+/* =====================================================================
+   เริ่มระบบ
+   ===================================================================== */
+(function boot() {
+  try { if (Store.get('dark', false)) document.documentElement.classList.add('dark'); } catch (e) {}
+  refreshColors();
+  const themeBtn = $('btnTheme');
+  const setThemeLabel = () => { themeBtn.textContent = document.documentElement.classList.contains('dark') ? '☀️ โหมดสว่าง' : '🌙 โหมดมืด'; };
+  setThemeLabel();
+  themeBtn.addEventListener('click', () => { const d = document.documentElement.classList.toggle('dark'); Store.set('dark', d); refreshColors(); setThemeLabel(); });
+
+  Tab1.init(); Tab2.init(); Tab3.init(); Tab4.init();
+  buildMission($('m1'), MISSION1, 't1'); buildMission($('m2'), MISSION2, 't2'); buildMission($('m3'), MISSION3, 't3'); buildMission($('m4'), MISSION4, 't4');
+
+  document.querySelectorAll('.tab-btn').forEach(b => b.addEventListener('click', () => TabController.switchTo(b.dataset.tab)));
+  const saved = Store.get('tab', 't1'); if (saved !== 't1') TabController.switchTo(saved);
+
+  const sBtn = $('btnSound');
+  const setSoundLabel = () => { sBtn.textContent = AudioEngine.enabled ? '🔇 ปิดเสียง' : '🔊 เปิดเสียง'; sBtn.setAttribute('aria-pressed', AudioEngine.enabled); sBtn.classList.toggle('btn-primary', !AudioEngine.enabled); };
+  sBtn.addEventListener('click', async () => { if (AudioEngine.enabled) AudioEngine.disable(); else await AudioEngine.enable(); setSoundLabel(); });
+  $('vol').addEventListener('input', (e) => { $('volVal').textContent = e.target.value + '%'; AudioEngine.setVolume(e.target.value / 100); });
+  // พับหน้าจอ/สลับแอป → ปิดเสียงทั้งหมด
+  document.addEventListener('visibilitychange', () => { if (document.hidden && AudioEngine.enabled) { AudioEngine.disable(); setSoundLabel(); } });
+
+  // ลูป requestAnimationFrame เดียว วาดเฉพาะแท็บที่เปิดอยู่
+  let last = performance.now();
+  function frame(ts) {
+    requestAnimationFrame(frame);
+    if (document.hidden) { last = ts; return; }
+    const dt = Math.min(0.05, Math.max(0, (ts - last) / 1000)); last = ts;
+    TabController.current.draw(dt);
+  }
+  requestAnimationFrame(frame);
+  window.__soundlab = { AudioEngine, TabController, Tab1, Tab2, Tab3, Tab4 };
+})();
+</script>
+</body>
+</html>
